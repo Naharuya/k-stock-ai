@@ -43,7 +43,8 @@ for (const missing of [null, undefined, "", "  ", false]) {
   const result = evaluateExitPosition({ entry, currentAnalysis: analysis });
   assert.equal(result.currentScore, null);
   assert.equal(result.scoreDelta, null);
-  assert.equal(result.exitPressure, 0);
+  assert.equal(result.exitPressure, null);
+  assert.equal(result.status, "DATA_INCOMPLETE");
 }
 for (const price of [null, undefined, "", "  ", false, 0, -1]) {
   const analysis = mockAnalysis();
@@ -51,7 +52,8 @@ for (const price of [null, undefined, "", "  ", false, 0, -1]) {
   const result = evaluateExitPosition({ entry, currentAnalysis: analysis });
   assert.equal(result.currentPrice, null);
   assert.equal(result.pnlPct, null);
-  assert.equal(result.exitPressure, 0);
+  assert.equal(result.exitPressure, null);
+  assert.equal(result.status, "DATA_INCOMPLETE");
   assert.throws(() => createEntrySnapshot(analysis), /buyPrice/);
 }
 assert.equal(createEntrySnapshot(mockAnalysis(), { buyPrice: null }).buyPrice, 100000);

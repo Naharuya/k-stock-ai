@@ -1,8 +1,5 @@
-function finite(value) {
-  if (typeof value !== "number" && typeof value !== "string") return false;
-  if (typeof value === "string" && value.trim() === "") return false;
-  return Number.isFinite(Number(value));
-}
+import { randomUUID } from "node:crypto";
+import { isFiniteNumber as finite } from "../utils/numbers.js";
 
 function num(value, fallback = null) {
   return finite(value) ? Number(value) : fallback;
@@ -30,7 +27,8 @@ function componentRatio(analysis, key) {
 }
 
 function riskScore(analysis) {
-  return num(analysis?.dart?.agents?.risk?.riskScore, 50);
+  const score = num(analysis?.dart?.agents?.risk?.riskScore);
+  return score !== null && score >= 0 && score <= 100 ? score : null;
 }
 
 function newsSentiment(analysis) {
@@ -51,6 +49,7 @@ export function createEntrySnapshot(analysis, {
 
   return {
     version: "ENTRY_SNAPSHOT_V1",
+    snapshotId: randomUUID(),
     stockCode: analysis.stockCode,
     corpName: analysis.corpName || analysis.stockCode,
     registeredAt: new Date().toISOString(),
@@ -107,10 +106,23 @@ export function evaluateExitPosition({ entry, currentAnalysis }) {
   const currentTech = currentAnalysis?.marketData?.technicalMetrics || {};
   const currentFlow = currentAnalysis?.marketData?.flowMetrics || {};
   const currentRisk = riskScore(currentAnalysis);
-  const entryRisk = num(entry?.thesis?.riskScore, 50);
+  const entryRisk = num(entry?.thesis?.riskScore);
   const currentRegime = currentAnalysis?.marketData?.marketContext?.score?.regime || "UNKNOWN";
   const currentNews = newsSentiment(currentAnalysis);
   const hardStop = Boolean(currentAnalysis?.committee?.hardStop);
+  const missingFields = [];
+  if (currentPrice === null) missingFields.push("현재가");
+  if (buyPrice === null || buyPrice <= 0) missingFields.push("매수가");
+  if (currentScore === null || currentScore < 0 || currentScore > 100 || currentAnalysis.committee?.status === "DATA_INCOMPLETE") missingFields.push("현재 종합점수");
+  if (entryScore === null || entryScore < 0 || entryScore > 100) missingFields.push("진입 종합점수");
+  if (currentRisk === null) missingFields.push("현재 리스크");
+  if (entryRisk === null || entryRisk < 0 || entryRisk > 100) missingFields.push("진입 리스크");
+  if (!currentTech.trend || currentTech.trend === "UNKNOWN") missingFields.push("기술 추세");
+  if (!finite(currentFlow.combinedSmartMoneyQty5d)) missingFields.push("최근 수급");
+  if (currentRegime === "UNKNOWN") missingFields.push("시장 환경");
+  if (currentNews === "UNKNOWN") missingFields.push("뉴스");
+  if (currentAnalysis.committee?.newsReviewRequired) missingFields.push("뉴스 위험 사실 확인");
+  if (currentAnalysis.completeness && currentAnalysis.completeness.percent !== 100) missingFields.push("분석 완성도");
 
   let exitPressure = 0;
   const reasons = [];
@@ -169,7 +181,7 @@ export function evaluateExitPosition({ entry, currentAnalysis }) {
     positives.push("외국인+기관 최근 5일 합산 순매수 유지");
   }
 
-  const riskDelta = currentRisk - entryRisk;
+  const riskDelta = currentRisk !== null && entryRisk !== null ? currentRisk - entryRisk : null;
   if (riskDelta >= 25) {
     exitPressure += 22;
     reasons.push(`기업 리스크 점수 +${riskDelta.toFixed(0)} 악화`);
@@ -190,12 +202,19 @@ export function evaluateExitPosition({ entry, currentAnalysis }) {
   exitPressure = clamp(exitPressure);
 
   let status = "HOLD";
-  if (hardStop || exitPressure >= 70) status = "RISK_EXIT_REVIEW";
+  if (hardStop) status = "RISK_EXIT_REVIEW";
+  else if (missingFields.length) {
+    status = "DATA_INCOMPLETE";
+    exitPressure = null;
+    reasons.unshift(`판정 보류: ${missingFields.join(", ")} 데이터 확인 필요`);
+  }
+  else if (exitPressure >= 70) status = "RISK_EXIT_REVIEW";
   else if (exitPressure >= 50) status = "EXIT_REVIEW";
   else if (pnlPct !== null && pnlPct >= takeProfitPct) status = "TAKE_PROFIT_REVIEW";
   else if (exitPressure >= 30) status = "CAUTION";
 
   const labelKo = {
+    DATA_INCOMPLETE: "데이터 부족",
     HOLD: "보유 유지",
     CAUTION: "주의 관찰",
     TAKE_PROFIT_REVIEW: "이익실현 검토",
@@ -219,6 +238,7 @@ export function evaluateExitPosition({ entry, currentAnalysis }) {
     status,
     labelKo,
     hardStop,
+    dataQuality: { complete: missingFields.length === 0, missingFields },
     reasons: uniq(reasons).slice(0, 8),
     positiveSignals: uniq(positives).slice(0, 6),
     checkpoints: {

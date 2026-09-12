@@ -1,13 +1,11 @@
+import { isFiniteNumber as finite } from "../utils/numbers.js";
+
 function clamp(value, min = 0, max = 100) {
   return Math.max(min, Math.min(max, Math.round(value)));
 }
 
-function finite(value) {
-  return Number.isFinite(Number(value));
-}
-
 function scale(score, max, weight) {
-  if (!finite(score) || !finite(max) || Number(max) <= 0) return null;
+  if (!finite(score) || !finite(max) || Number(max) <= 0 || Number(score) < 0 || Number(score) > Number(max)) return null;
   return (Number(score) / Number(max)) * weight;
 }
 
@@ -104,8 +102,8 @@ export function buildInvestmentCommittee({ dart, valuation, technical, flow, mar
   };
 
   const risk = dart?.agents?.risk || {};
-  const dartRiskScore = finite(risk.riskScore) ? Number(risk.riskScore) : 50;
-  const riskSafetyScore = clamp(100 - dartRiskScore);
+  const dartRiskScore = finite(risk.riskScore) && Number(risk.riskScore) >= 0 && Number(risk.riskScore) <= 100 ? Number(risk.riskScore) : null;
+  const riskSafetyScore = dartRiskScore === null ? null : clamp(100 - dartRiskScore);
 
   const components = {
     fundamental: { raw: dart?.scorecard?.score ?? null, max: dart?.scorecard?.maxScore ?? 80, weight: weights.fundamental },
@@ -119,8 +117,13 @@ export function buildInvestmentCommittee({ dart, valuation, technical, flow, mar
 
   let weightedTotal = 0;
   let availableWeight = 0;
-  for (const component of Object.values(components)) {
-    const weighted = scale(component.raw, component.max, component.weight);
+  const inputs = { fundamental: dart?.scorecard, valuation, technical, flow, market, news, risk };
+  for (const [key, component] of Object.entries(components)) {
+    const inputStatus = inputs[key]?.status;
+    const statusReady = !inputStatus || inputStatus === "READY" || (key === "fundamental" && inputStatus === "PARTIAL_DART_ONLY");
+    const validationFailed = key === "fundamental" && dart?.financials?.validation?.ok === false;
+    const weighted = statusReady && !validationFailed ? scale(component.raw, component.max, component.weight) : null;
+    if (weighted === null) component.raw = null;
     component.weighted = weighted === null ? null : Number(weighted.toFixed(2));
     if (weighted !== null) {
       weightedTotal += weighted;
@@ -132,14 +135,15 @@ export function buildInvestmentCommittee({ dart, valuation, technical, flow, mar
   const baseScore = dataReady ? clamp(weightedTotal) : null;
   const bear = buildBearCase({ dart, valuation, technical, flow, market, news });
 
-  const criticalNews = Array.isArray(news?.highRiskEvents) && news.highRiskEvents.length > 0;
+  // RSS title matches require corroboration; confirmed disclosure/risk inputs
+  // below remain authoritative for a hard stop.
   const criticalDart = dart?.agents?.dart?.impact === "VERY_NEGATIVE" && dart?.agents?.dart?.important === true;
+  const newsReviewRequired = (news?.highRiskEvents?.length || 0) > 0;
   const hardStop = Boolean(
     risk?.criticalRisk === true ||
     risk?.riskLevel === "VERY_HIGH" ||
     risk?.excludeSuggested === true ||
-    criticalDart ||
-    criticalNews
+    criticalDart
   );
 
   let adjustedScore = baseScore;
@@ -149,15 +153,17 @@ export function buildInvestmentCommittee({ dart, valuation, technical, flow, mar
   }
   if (hardStop && adjustedScore !== null) adjustedScore = Math.min(adjustedScore, 39);
 
-  let status = "DATA_INCOMPLETE";
+  let status = hardStop ? "RISK" : "DATA_INCOMPLETE";
   if (dataReady) {
     if (hardStop || adjustedScore < 45) status = "RISK";
     else if (adjustedScore < 60) status = "WATCH";
     else if (adjustedScore < 75) status = "INTEREST";
     else status = "CONDITION_MET";
+    if (!hardStop && newsReviewRequired && ["INTEREST", "CONDITION_MET"].includes(status)) status = "WATCH";
   }
 
   const reasons = { positive: [], negative: [] };
+  if (newsReviewRequired) reasons.negative.push("뉴스 위험 키워드의 해당 기업 관련성과 사실 확인 필요");
   pushScoreReason(reasons, "펀더멘털", components.fundamental.raw, components.fundamental.max);
   pushScoreReason(reasons, "밸류에이션", components.valuation.raw, components.valuation.max);
   pushScoreReason(reasons, "기술", components.technical.raw, components.technical.max);
@@ -181,8 +187,8 @@ export function buildInvestmentCommittee({ dart, valuation, technical, flow, mar
     "외국인·기관 수급이 급격히 악화되지 않을 것",
     "시장 regime이 RISK_OFF로 악화될 경우 재평가"
   ];
-  if (valuation?.score <= 7) entryConditions.push("밸류에이션 부담 완화 또는 실적 상향으로 가격 정당화 확인");
-  if (technical?.score <= 10) entryConditions.push("기술적 추세 개선 확인");
+  if (finite(valuation?.score) && valuation.score <= 7) entryConditions.push("밸류에이션 부담 완화 또는 실적 상향으로 가격 정당화 확인");
+  if (finite(technical?.score) && technical.score <= 10) entryConditions.push("기술적 추세 개선 확인");
 
   const invalidConditions = uniq([
     ...(risk?.redFlags || []),
@@ -197,11 +203,13 @@ export function buildInvestmentCommittee({ dart, valuation, technical, flow, mar
     baseScore,
     confidence,
     hardStop,
+    newsReviewRequired,
     hardStopReason: hardStop
-      ? criticalNews ? "HIGH_RISK_NEWS" : criticalDart ? "CRITICAL_DART_EVENT" : "CRITICAL_RISK"
+      ? criticalDart ? "CRITICAL_DART_EVENT" : "CRITICAL_RISK"
       : null,
     weights,
     components,
+    missingComponents: Object.entries(components).filter(([, component]) => component.weighted === null).map(([key]) => key),
     bear,
     positiveReasons: uniq(reasons.positive).slice(0, 8),
     negativeReasons: uniq(reasons.negative).slice(0, 8),
@@ -215,10 +223,10 @@ export function buildInvestmentCommittee({ dart, valuation, technical, flow, mar
       CONDITION_MET: "조건충족",
       DATA_INCOMPLETE: "데이터부족"
     }[status],
-    summary: !dataReady
-      ? "핵심 데이터가 완전하지 않아 최종 판정을 보류합니다."
-      : hardStop
-        ? "Risk Hard Stop이 적용되어 위험 상태로 분류했습니다."
+    summary: hardStop
+      ? "Risk Hard Stop이 적용되어 위험 상태로 분류했습니다."
+      : !dataReady
+        ? "핵심 데이터가 완전하지 않아 최종 판정을 보류합니다."
         : `7개 축 100점 가중치와 Bear Case를 통합한 결과 ${adjustedScore}점, ${status} 상태입니다.`,
     disclaimer: "연구·의사결정 지원용 분석이며 수익을 보장하거나 자동 매수·매도를 지시하지 않습니다."
   };

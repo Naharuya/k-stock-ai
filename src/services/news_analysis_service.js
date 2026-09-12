@@ -14,6 +14,20 @@ const HIGH_RISK = [
   "상장폐지", "거래정지", "부도", "회생", "횡령", "배임", "압수수색", "대규모 리콜", "유상증자"
 ];
 
+export function classifyNewsRisk(title) {
+  const text = String(title || "");
+  const matches = [...text.matchAll(new RegExp(HIGH_RISK.join("|"), "g"))];
+  return matches.map((match, index) => {
+    // Stop at the next event: resolving one event must not suppress another.
+    const clause = text.slice(match.index + match[0].length, matches[index + 1]?.index ?? text.length).split(/[,;.!?…]/u)[0];
+    const uncertain = /(?:해제|해소|취소|철회|종결)\s*(검토|추진|신청|가능|예정|기대|전망)|부인.*(불구|하지만)|(?:해제|해소|취소|철회|종결).*(불발|실패|보류|아니|않)/u.test(clause);
+    let status = "REVIEW_REQUIRED";
+    if (!uncertain && /(?:혐의\s*)?(?:사실\s*(무근|아니)|부인|무혐의|무죄)/u.test(clause)) status = "DENIED";
+    else if (!uncertain && /^\s*(?:조치\s*|결정\s*|신청\s*|위험\s*|위기\s*|우려\s*|절차\s*)?(?:해제|해소|철회|종결|취소)(?:\s|$|[되됐된돼,·])/u.test(clause)) status = "RESOLVED";
+    return { keyword: match[0], status };
+  });
+}
+
 function countMatches(text, words) {
   const lower = String(text || "").toLowerCase();
   return words.reduce((sum, word) => sum + (lower.includes(word.toLowerCase()) ? 1 : 0), 0);
@@ -45,6 +59,7 @@ export function analyzeNewsItems(news) {
       negativeCount: 0,
       neutralCount: 0,
       highRiskEvents: [],
+      contextualRiskEvents: [],
       topEvents: [],
       notes: ["분석 가능한 최근 뉴스가 없음"],
       caveat: news?.caveat || "뉴스 데이터 부족"
@@ -57,11 +72,14 @@ export function analyzeNewsItems(news) {
   let negativeCount = 0;
   let neutralCount = 0;
   const highRiskEvents = [];
+  const contextualRiskEvents = [];
   const scored = [];
 
   for (const item of items) {
     const pos = countMatches(item.title, POSITIVE);
-    const neg = countMatches(item.title, NEGATIVE);
+    const contexts = classifyNewsRisk(item.title);
+    const resolvedKeywords = new Set(contexts.filter((event) => event.status !== "REVIEW_REQUIRED" && !contexts.some((other) => other.keyword === event.keyword && other.status === "REVIEW_REQUIRED")).map((event) => event.keyword));
+    const neg = countMatches(item.title, NEGATIVE.filter((word) => !resolvedKeywords.has(word)));
     const weight = recencyWeight(item.publishedAt);
     const raw = pos - neg;
 
@@ -72,9 +90,10 @@ export function analyzeNewsItems(news) {
     weightedPositive += pos * weight;
     weightedNegative += neg * weight;
 
-    const high = HIGH_RISK.filter((word) => String(item.title).includes(word));
+    const high = [...new Set(contexts.filter((event) => event.status === "REVIEW_REQUIRED").map((event) => event.keyword))];
+    contextualRiskEvents.push(...contexts.filter((event) => event.status !== "REVIEW_REQUIRED").map((event) => ({ ...event, title: item.title, publishedAt: item.publishedAt, source: item.source })));
     if (high.length) {
-      highRiskEvents.push({ title: item.title, keywords: high, publishedAt: item.publishedAt, source: item.source });
+      highRiskEvents.push({ title: item.title, keywords: high, status: "REVIEW_REQUIRED", publishedAt: item.publishedAt, source: item.source, link: item.link });
     }
 
     scored.push({ ...item, signal: raw > 0 ? "POSITIVE" : raw < 0 ? "NEGATIVE" : "NEUTRAL", impact: Math.abs(raw) * weight });
@@ -106,6 +125,7 @@ export function analyzeNewsItems(news) {
     negativeCount,
     neutralCount,
     highRiskEvents,
+    contextualRiskEvents,
     topEvents,
     notes,
     caveat: `${news?.caveat || ""} News Score는 기사 제목의 키워드·최신성을 이용한 1차 휴리스틱이며, 기사 원문 사실확인·맥락판단은 v1.x에서 보강합니다.`.trim()

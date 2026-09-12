@@ -13,6 +13,26 @@ import { analyzeNewsItems } from "./news_analysis_service.js";
 import { buildInvestmentCommittee } from "./investment_committee_service.js";
 import { buildInvestmentIndicators } from "./investment_indicators_service.js";
 import { buildResearchProfile } from "./research_profile_service.js";
+import { isFiniteNumber } from "../utils/numbers.js";
+
+export function buildAnalysisCompleteness({ dart, quote, valuation, technical, flow, market, news }) {
+  const ready = (part) => part?.status === "READY" && isFiniteNumber(part.score);
+  const risk = dart?.agents?.risk?.riskScore;
+  const checks = {
+    financials: dart?.financials?.validation?.ok === true && isFiniteNumber(dart?.scorecard?.score),
+    disclosures: Boolean(dart?.disclosures),
+    risk: isFiniteNumber(risk) && Number(risk) >= 0 && Number(risk) <= 100,
+    valuation: ready(valuation),
+    technical: ready(technical),
+    price: isFiniteNumber(quote?.price) && Number(quote.price) > 0,
+    flow: ready(flow),
+    market: ready(market),
+    news: ready(news)
+  };
+  const weights = { financials: 35, disclosures: 10, risk: 10, valuation: 10, technical: 10, price: 5, flow: 5, market: 10, news: 5 };
+  const completed = Object.keys(checks).filter((key) => checks[key]);
+  return { completed, pending: Object.keys(checks).filter((key) => !checks[key]), percent: completed.reduce((sum, key) => sum + weights[key], 0) };
+}
 
 async function loadKisMarketData(stockCode, { prefetchedQuote = null, sharedMarketContext = null } = {}) {
   // KIS API 호출은 rate limit을 고려해 직렬 실행한다. 후보 엔진은 quote/시장환경을 재사용해 중복 호출을 줄인다.
@@ -79,35 +99,16 @@ export async function analyzeStockWithMarketData({ stockCode, businessYear, pref
     }
   }
 
-  const dartBase = dart.scorecard.score ?? 0;
-  const marketReady = marketScore.status === "READY" && Number.isFinite(marketScore.score);
+  const dartBase = dart.scorecard.score ?? null;
   const newsReady = newsScore.status === "READY" && Number.isFinite(newsScore.score);
 
-  const expandedScore = dartBase + valuation.score + technical.score + flowScore.score
-    + (marketReady ? marketScore.score : 0)
-    + (newsReady ? newsScore.score : 0);
-  const expandedMax = 140 + (marketReady ? 20 : 0) + (newsReady ? 20 : 0);
-
-  let completeness;
-  if (marketReady && newsReady) {
-    completeness = {
-      completed: ["financials", "disclosures", "risk", "valuation", "technical", "price", "flow", "market", "news"],
-      pending: [],
-      percent: 100
-    };
-  } else if (marketReady) {
-    completeness = {
-      completed: ["financials", "disclosures", "risk", "valuation", "technical", "price", "flow", "market"],
-      pending: ["news"],
-      percent: 95
-    };
-  } else {
-    completeness = {
-      completed: ["financials", "disclosures", "risk", "valuation", "technical", "price", "flow"],
-      pending: ["market", "news"],
-      percent: 85
-    };
-  }
+  const availableScores = [
+    { score: dartBase, max: dart.scorecard.maxScore, status: dart.scorecard.status === "PARTIAL_DART_ONLY" ? "READY" : dart.scorecard.status },
+    valuation, technical, flowScore, marketScore, newsScore
+  ].filter((part) => part.status === "READY" && isFiniteNumber(part.score) && isFiniteNumber(part.max) && Number(part.max) > 0);
+  const expandedScore = availableScores.reduce((sum, part) => sum + Number(part.score), 0);
+  const expandedMax = availableScores.reduce((sum, part) => sum + Number(part.max), 0);
+  const completeness = buildAnalysisCompleteness({ dart, quote, valuation, technical, flow: flowScore, market: marketScore, news: newsScore });
 
   const committee = buildInvestmentCommittee({
     dart,
@@ -163,7 +164,7 @@ export async function analyzeStockWithMarketData({ stockCode, businessYear, pref
       expandedPartial: {
         score: expandedScore,
         max: expandedMax,
-        normalizedTo100: Math.round((expandedScore / expandedMax) * 100)
+        normalizedTo100: expandedMax > 0 ? Math.round((expandedScore / expandedMax) * 100) : null
       }
     },
     completeness,

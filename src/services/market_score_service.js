@@ -3,6 +3,9 @@ function clamp(v, min, max) {
 }
 
 export function scoreValuation(quote) {
+  if (!Number.isFinite(quote?.per) && !Number.isFinite(quote?.pbr)) {
+    return { score: null, max: 20, status: "INSUFFICIENT_DATA", notes: [] };
+  }
   let score = 10;
   const notes = [];
 
@@ -30,6 +33,7 @@ export function scoreValuation(quote) {
   }
 
   return {
+    status: "READY",
     score: clamp(score, 0, 20),
     max: 20,
     notes,
@@ -38,6 +42,9 @@ export function scoreValuation(quote) {
 }
 
 export function scoreTechnical(metrics) {
+  if (!metrics || !metrics.trend || metrics.trend === "UNKNOWN" || !Number.isFinite(metrics.rsi14)) {
+    return { score: null, max: 20, status: "INSUFFICIENT_HISTORY", notes: [] };
+  }
   let score = 10;
   const notes = [];
 
@@ -65,6 +72,7 @@ export function scoreTechnical(metrics) {
   }
 
   return {
+    status: "READY",
     score: clamp(score, 0, 20),
     max: 20,
     notes

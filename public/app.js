@@ -18,7 +18,7 @@ let currentAnalysis = null;
 const POSITION_KEY = 'kstock:positions:v1';
 $('businessYear').value=String(new Date().getFullYear());
 
-function n(v, fallback='-'){ return Number.isFinite(Number(v)) ? Number(v) : fallback; }
+function n(v, fallback='-'){ return (typeof v==='number'||(typeof v==='string'&&v.trim()!==''))&&Number.isFinite(Number(v)) ? Number(v) : fallback; }
 function f(v){ const x=n(v,null); return x===null?'-':fmt.format(x); }
 function fi(v){ const x=n(v,null); return x===null?'-':fmtInt.format(x); }
 function cls(v){ return Number(v)>0?'pos':Number(v)<0?'neg':''; }
@@ -49,7 +49,7 @@ function renderInsights(c){
 }
 
 function updateScoreHistory(data){
-  const score=Number(data.committee?.totalScore); if(!Number.isFinite(score)) return;
+  const score=n(data.committee?.totalScore,null); if(score===null){$('scoreDelta').textContent='-';$('scoreDelta').className='';$('scoreDelta').title='';return;}
   const key=`kstock:lastScore:${data.stockCode}`;
   let prev=null; try{ prev=JSON.parse(localStorage.getItem(key)||'null'); }catch{}
   if(prev && Number.isFinite(Number(prev.score))){
@@ -354,10 +354,10 @@ function loadPositions(){
 }
 function savePositions(rows){ localStorage.setItem(POSITION_KEY,JSON.stringify(rows)); }
 function exitStatusClass(status){
-  return ({HOLD:'exit-hold',CAUTION:'exit-caution',TAKE_PROFIT_REVIEW:'exit-profit',EXIT_REVIEW:'exit-review',RISK_EXIT_REVIEW:'exit-risk'})[status]||'exit-neutral';
+  return ({DATA_INCOMPLETE:'exit-neutral',HOLD:'exit-hold',CAUTION:'exit-caution',TAKE_PROFIT_REVIEW:'exit-profit',EXIT_REVIEW:'exit-review',RISK_EXIT_REVIEW:'exit-risk'})[status]||'exit-neutral';
 }
 function exitLabel(status){
-  return ({HOLD:'보유 유지',CAUTION:'주의 관찰',TAKE_PROFIT_REVIEW:'이익실현 검토',EXIT_REVIEW:'매도 검토',RISK_EXIT_REVIEW:'위험 이탈 검토'})[status]||'재검증 필요';
+  return ({DATA_INCOMPLETE:'데이터 부족',HOLD:'보유 유지',CAUTION:'주의 관찰',TAKE_PROFIT_REVIEW:'이익실현 검토',EXIT_REVIEW:'매도 검토',RISK_EXIT_REVIEW:'위험 이탈 검토'})[status]||'재검증 필요';
 }
 function positionPnl(entry,last){
   const cp=Number(last?.currentPrice); const bp=Number(entry?.buyPrice); if(!Number.isFinite(cp)||cp<=0||!Number.isFinite(bp)||bp<=0)return null; return ((cp-bp)/bp)*100;
@@ -372,9 +372,10 @@ function renderPortfolio(){
   box.innerHTML=rows.map((p,i)=>{
     const e=p.entry||{}; const last=p.lastEvaluation||null; const pnl=last?.pnlPct ?? positionPnl(e,last); const st=last?.status||'PENDING';
     const reasons=(last?.reasons||[]).slice(0,3);
+    const pressure=last?.exitPressure==null?'-':`${fi(last.exitPressure)}/100`;
     return `<article class="position-card ${exitStatusClass(st)}" data-code="${escapeHtml(e.stockCode)}">
       <div class="position-head"><div><strong>${escapeHtml(e.corpName||e.stockCode)}</strong><span>${escapeHtml(e.stockCode)} · 등록 ${formatDateTime(e.registeredAt)}</span></div><span class="exit-badge ${exitStatusClass(st)}">${last?escapeHtml(last.labelKo||exitLabel(st)):'재검증 대기'}</span></div>
-      <div class="position-metrics"><div><span>매수가</span><b>${fi(e.buyPrice)}원</b></div><div><span>현재가</span><b>${last?.currentPrice?`${fi(last.currentPrice)}원`:'-'}</b></div><div><span>수익률</span><b class="${cls(pnl)}">${pnl==null?'-':pct(pnl)}</b></div><div><span>Exit Pressure</span><b>${last?`${fi(last.exitPressure)}/100`:'-'}</b></div><div><span>진입→현재</span><b>${last?.entryScore!=null?`${fi(last.entryScore)} → ${fi(last.currentScore)}`:'-'}</b></div></div>
+      <div class="position-metrics"><div><span>매수가</span><b>${fi(e.buyPrice)}원</b></div><div><span>현재가</span><b>${last?.currentPrice?`${fi(last.currentPrice)}원`:'-'}</b></div><div><span>수익률</span><b class="${cls(pnl)}">${pnl==null?'-':pct(pnl)}</b></div><div><span>Exit Pressure</span><b>${pressure}</b></div><div><span>진입→현재</span><b>${last?.entryScore!=null?`${fi(last.entryScore)} → ${fi(last.currentScore)}`:'-'}</b></div></div>
       <div class="position-thesis"><b>진입 논리</b><span>${escapeHtml((e.thesis?.entryReasons||[]).slice(0,2).join(' / ')||'저장된 진입 논리 없음')}</span></div>
       <div class="position-reasons">${reasons.length?reasons.map(r=>`<span>• ${escapeHtml(r)}</span>`).join(''):'<span>현재 분석과 비교하려면 Exit 재검증을 실행하세요.</span>'}</div>
       <div class="position-actions"><button class="exit-evaluate" data-index="${i}">Exit 재검증</button><button class="position-open" data-code="${escapeHtml(e.stockCode)}" data-name="${escapeHtml(e.corpName||e.stockCode)}">정밀분석</button><button class="position-delete secondary" data-index="${i}">삭제</button></div>
@@ -408,14 +409,24 @@ async function saveCurrentEntry(){
 
 async function evaluatePosition(index){
   const rows=loadPositions(); const row=rows[index]; if(!row?.entry)return;
+  const entryRevision=JSON.stringify(row.entry);
+  const requestId=crypto.randomUUID();
+  row.evaluationRequestId=requestId;
   const card=document.querySelector(`.position-card[data-code="${row.entry.stockCode}"]`); const btn=card?.querySelector('.exit-evaluate'); if(btn){btn.disabled=true;btn.textContent='재검증 중…';}
   try{
+    savePositions(rows);
     const year=$('businessYear')?.value||String(new Date().getFullYear());
     const r=await fetch(`/api/exit/evaluate/${row.entry.stockCode}?businessYear=${encodeURIComponent(year)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({entry:row.entry})});
     const b=await r.json(); if(!r.ok||!b.success)throw new Error(b.message||'Exit 재검증 실패');
-    row.lastEvaluation=b.result.evaluation; row.lastAnalysisAt=b.result.currentAnalysis?.analyzedAt; rows[index]=row; savePositions(rows); renderPortfolio();
-    const ev=row.lastEvaluation; showStatus(`${row.entry.corpName} Exit 재검증 완료 · ${ev.labelKo} · Exit Pressure ${ev.exitPressure}/100 · 수익률 ${ev.pnlPct==null?'-':pct(ev.pnlPct)}`);
-  }catch(e){showStatus(`Exit 재검증 실패: ${e.message}`,true);if(btn){btn.disabled=false;btn.textContent='Exit 재검증';}}
+    const latest=loadPositions();
+    const target=latest.find(p=>p.entry?.stockCode===row.entry.stockCode && JSON.stringify(p.entry)===entryRevision && p.evaluationRequestId===requestId);
+    if(!target)return;
+    target.lastEvaluation=b.result.evaluation; target.lastAnalysisAt=b.result.currentAnalysis?.analyzedAt;
+    delete target.evaluationRequestId;
+    savePositions(latest); renderPortfolio();
+    const ev=target.lastEvaluation; showStatus(`${row.entry.corpName} Exit 재검증 완료 · ${ev.labelKo} · Exit Pressure ${ev.exitPressure==null?'-':ev.exitPressure+'/100'} · 수익률 ${ev.pnlPct==null?'-':pct(ev.pnlPct)}`);
+  }catch(e){showStatus(`Exit 재검증 실패: ${e.message}`,true);}
+  finally{if(btn){btn.disabled=false;btn.textContent='Exit 재검증';}}
 }
 
 if($('saveEntry')) $('saveEntry').addEventListener('click',saveCurrentEntry);

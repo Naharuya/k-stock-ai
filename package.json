@@ -7,6 +7,7 @@
     "node": ">=22"
   },
   "scripts": {
+    "test": "node --test src/core_regression_test.js src/entry_exit_smoke_test.js src/committee_smoke_test.js src/candidate_engine_smoke_test.js src/candidate_ranking_smoke_test.js src/screener_smoke_test.js src/disclosure_semantic_smoke_test.js src/research_profile_smoke_test.js src/dashboard_operational_smoke_test.js src/entry_exit_ux_smoke_test.js",
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "smoke": "node src/smoke_test.js",
