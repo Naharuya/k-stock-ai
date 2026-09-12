@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>K-Stock AI Dashboard</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="mobile-appbar">
+    <a class="mobile-brand" href="#candidates" aria-label="K-Stock AI 홈"><span class="brand-mark">K</span><span><strong>K-Stock AI</strong><small>오늘의 관심종목</small></span></a>
+    <a class="mobile-search" href="#overview" aria-label="종목 검색">⌕</a>
+  </header>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">K</div>
+        <div><strong>K-Stock AI</strong><span id="appVersion">Pro Research Dashboard</span></div>
+      </div>
+      <nav>
+        <a class="active" href="#overview">개요</a>
+        <a href="#candidates">오늘의 관심후보</a>
+        <a href="#portfolio">보유종목 · Exit</a>
+        <a href="#screener">종목 스크리너</a>
+        <a href="#indicators">핵심 투자지표</a>
+        <a href="#scores">7개 축 점수</a>
+        <a href="#research">Bull vs Bear</a>
+        <a href="#scenarios">조건 시나리오</a>
+        <a href="#chart">주가 차트</a>
+        <a href="#flow">수급</a>
+        <a href="#market">시장환경</a>
+        <a href="#news">뉴스</a>
+        <a href="#committee">위원회</a>
+      </nav>
+      <div class="sidebar-note">연구·의사결정 지원용<br/>자동매매 기능 없음</div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">KOREA EQUITY RESEARCH</p>
+          <h1>종목 분석 대시보드</h1>
+        </div>
+        <form id="searchForm" class="searchbar" autocomplete="off">
+          <div class="stock-search-wrap">
+            <input id="stockCode" value="005930" aria-label="종목명 또는 종목코드" placeholder="종목명 또는 코드" />
+            <div id="stockSuggestions" class="suggestions hidden" role="listbox"></div>
+          </div>
+          <input id="businessYear" inputmode="numeric" maxlength="4" value="2025" aria-label="사업연도" />
+          <button type="submit">분석 실행</button>
+        </form>
+      </header>
+
+      <section id="statusBanner" class="status-banner hidden"></section>
+      <section class="analysis-meta" id="analysisMeta">
+        <span>분석 기준시각 <b id="analyzedAt">-</b></span>
+        <span>이전 분석 대비 <b id="scoreDelta">-</b></span>
+      </section>
+
+
+      <section id="candidates" class="section-card candidate-section">
+        <div class="section-title">
+          <div><p class="eyebrow">TODAY CANDIDATE ENGINE</p><h2>오늘의 관심종목 후보 Top 20</h2></div>
+          <span id="candidatePill" class="pill">매수추천 아님</span>
+        </div>
+        <div class="candidate-toolbar">
+          <select id="candidateExchange"><option value="all">전체 시장</option><option value="kospi">KOSPI</option><option value="kosdaq">KOSDAQ</option></select>
+          <select id="candidateMode"><option value="fast">빠른 검증 · 현재가 10</option><option value="balanced" selected>균형 검증 · 현재가 15 + 정밀 3</option><option value="deep">강화 검증 · 현재가 20 + 정밀 5</option></select>
+          <button id="runCandidates" type="button">관심후보 생성</button>
+        </div>
+        <div id="candidateSummary" class="screener-summary">전체시장 → 위험필터 → 실시간 시세 → 정밀검증 → Committee 순으로 후보를 좁힙니다.</div>
+        <div class="candidate-pipeline" id="candidatePipeline"></div>
+        <div id="candidateTrustSummary" class="trust-summary"></div>
+        <div class="screener-table-wrap">
+          <table class="screener-table candidate-table">
+            <thead><tr><th>순위</th><th>종목</th><th>매력도</th><th>검증등급</th><th>Committee</th><th>핵심 이유</th><th>주요 위험</th><th>PER/PBR</th><th>스타일</th><th></th></tr></thead>
+            <tbody id="candidateBody"><tr><td colspan="10" class="empty">관심후보 생성을 눌러주세요.</td></tr></tbody>
+          </table>
+        </div>
+        <div class="candidate-rejected-wrap">
+          <div class="candidate-subtitle"><h3>정밀검증 제외·위험 종목</h3><span class="pill">위험 사유 표시</span></div>
+          <div class="screener-table-wrap">
+            <table class="screener-table rejected-table">
+              <thead><tr><th>종목</th><th>분류</th><th>Committee</th><th>Risk</th><th>핵심 위험사유</th><th>Hard Stop</th><th></th></tr></thead>
+              <tbody id="candidateRejectedBody"><tr><td colspan="7" class="empty">정밀검증 결과가 여기에 표시됩니다.</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <p class="scenario-caveat">관심후보 ≠ 매수추천. 검증등급 A/B/C는 데이터 검증 깊이이고, 매력도 점수는 펀더멘털·밸류·모멘텀·유동성·위험을 합성한 후보 순위용 점수입니다. 정밀검증 전 후보는 반드시 개별 분석이 필요합니다.</p>
+      </section>
+
+
+      <section id="portfolio" class="section-card portfolio-section">
+        <div class="section-title">
+          <div><p class="eyebrow">ENTRY + EXIT ENGINE</p><h2>보유종목 · 파는 시점 재검증</h2></div>
+          <span class="pill">자동매도 아님</span>
+        </div>
+        <div class="portfolio-guide">매수 당시 분석점수·수급·추세·리스크를 저장하고, 현재 상태와 같은 엔진으로 비교합니다. <b>진입 논리가 무너지면 Exit Pressure가 올라갑니다.</b></div>
+        <div id="portfolioSummary" class="trust-summary portfolio-summary"></div>
+        <div id="portfolioList" class="portfolio-list"><div class="empty">아래 개별 종목 분석 후 ‘매수 기준 등록’을 누르면 보유종목이 여기에 표시됩니다.</div></div>
+        <p class="scenario-caveat">Exit 상태는 보유 유지 · 주의 관찰 · 이익실현 검토 · 매도 검토 · 위험 이탈 검토로 표시합니다. 실제 주문은 사용자가 직접 판단합니다.</p>
+      </section>
+
+      <section id="screener" class="section-card screener-section">
+        <div class="section-title">
+          <div><p class="eyebrow">MARKET-WIDE SCREENER</p><h2>KOSPI · KOSDAQ 종목 스크리너</h2></div>
+          <span id="universePill" class="pill">마스터 대기</span>
+        </div>
+        <div class="screener-toolbar">
+          <select id="screenerExchange" aria-label="시장 선택"><option value="all">전체 시장</option><option value="kospi">KOSPI</option><option value="kosdaq">KOSDAQ</option></select>
+          <select id="screenerTop" aria-label="표시 종목 수"><option value="10">Top 10</option><option value="20" selected>Top 20</option><option value="30">Top 30</option></select>
+          <select id="screenerEnrich" aria-label="실시간 보강 수"><option value="0">마스터만</option><option value="5">상위 5 실시간 보강</option><option value="10" selected>상위 10 실시간 보강</option></select>
+          <button id="runScreener" type="button">스크리닝 실행</button>
+        </div>
+        <div class="screener-summary" id="screenerSummary">KIS 종목 마스터를 불러오면 전 종목을 빠르게 1차 스캔하고, 상위 일부만 현재가 API로 보강합니다.</div>
+        <div class="screener-table-wrap">
+          <table class="screener-table">
+            <thead><tr><th>순위</th><th>종목</th><th>시장</th><th>업종코드</th><th>점수</th><th>ROE</th><th>PER</th><th>PBR</th><th>시가총액(억)</th><th>상태</th><th></th></tr></thead>
+            <tbody id="screenerBody"><tr><td colspan="11" class="empty">스크리닝 실행을 눌러주세요.</td></tr></tbody>
+          </table>
+        </div>
+        <p class="scenario-caveat">1차 후보 탐색용입니다. 상위 종목은 반드시 개별 정밀분석(재무·수급·뉴스·Risk·Committee)을 거쳐야 합니다.</p>
+      </section>
+
+      <section id="overview" class="hero-grid detail-focus-target" tabindex="-1">
+        <article class="hero-card primary-card">
+          <div class="hero-head">
+            <div>
+              <p class="muted" id="corpLabel">종목을 분석해 주세요</p>
+              <h2 id="corpName">K-Stock AI</h2>
+            </div>
+            <span id="committeeBadge" class="badge neutral">대기</span>
+          </div>
+          <div class="price-row">
+            <strong id="currentPrice">-</strong><span>원</span>
+          </div>
+          <div class="mini-metrics">
+            <div><span>PER</span><b id="per">-</b></div>
+            <div><span>PBR</span><b id="pbr">-</b></div>
+            <div><span>ROE</span><b id="heroRoe">-</b></div>
+          </div>
+        </article>
+
+        <article class="hero-card score-card">
+          <p class="muted">Investment Committee</p>
+          <div class="score-ring" id="scoreRing"><span id="totalScore">-</span><small>/100</small></div>
+          <div class="score-footer"><span>신뢰도</span><b id="confidence">-</b></div>
+        </article>
+
+        <article class="hero-card summary-card">
+          <p class="muted">AI 핵심 결론</p>
+          <h3 id="summaryTitle">분석 대기</h3>
+          <div id="insightChips" class="insight-chips"></div>
+          <p id="summaryText">종목명 또는 종목코드를 입력한 뒤 분석 실행을 눌러주세요.</p>
+          <div class="hard-stop" id="hardStop">Hard Stop: -</div>
+        </article>
+      </section>
+
+
+
+      <section id="entryManager" class="section-card entry-manager">
+        <div class="entry-flow" aria-label="Entry Exit 흐름">
+          <span class="active">1 · 현재 분석</span><i>→</i><span>2 · 매수 기준 등록</span><i>→</i><span>3 · 보유종목</span><i>→</i><span>4 · Exit 재검증</span>
+        </div>
+        <div class="section-title">
+          <div><p class="eyebrow">POSITION BASELINE</p><h2>현재 분석을 매수 기준으로 등록</h2></div>
+          <span id="entryStockPill" class="pill">분석 대기</span>
+        </div>
+        <div class="entry-form">
+          <label><span>매수가</span><input id="entryBuyPrice" inputmode="decimal" placeholder="현재가 자동입력" /></label>
+          <label><span>수량</span><input id="entryQuantity" inputmode="numeric" value="1" /></label>
+          <label><span>손실 제한 기준</span><input id="entryStopLoss" inputmode="decimal" value="-7" /><small>%</small></label>
+          <label><span>이익실현 검토 기준</span><input id="entryTakeProfit" inputmode="decimal" value="10" /><small>%</small></label>
+          <button id="saveEntry" type="button" disabled>매수 기준 등록</button>
+        </div>
+        <div id="entryHint" class="portfolio-guide">종목을 먼저 정밀분석하세요. 실제 매수가를 입력하면 그 시점의 Committee·수급·기술·뉴스·리스크가 Exit 비교 기준으로 저장됩니다.</div>
+      </section>
+
+      <section id="indicators" class="section-card">
+        <div class="section-title">
+          <div><p class="eyebrow">VALUATION & FUNDAMENTALS</p><h2>핵심 투자지표 11종</h2></div>
+          <span class="pill">KIS + OpenDART</span>
+        </div>
+        <div id="indicatorGrid" class="indicator-grid"></div>
+        <div class="indicator-note">
+          <b>계산 기준</b> · APS는 주당자산(총자산/상장주식수), PTBR은 유형자본 기준 근사치, PEG는 순이익 성장률을 EPS 성장률 대용치로 사용한 근사값입니다.
+        </div>
+      </section>
+
+      <section id="scores" class="section-card">
+        <div class="section-title"><div><p class="eyebrow">SCORECARD</p><h2>7개 축 점수</h2></div><span id="regimePill" class="pill">시장 대기</span></div>
+        <div id="scoreGrid" class="score-grid"></div>
+      </section>
+
+      <section id="research" class="section-card research-panel">
+        <div class="section-title">
+          <div><p class="eyebrow">MULTI-AGENT RESEARCH</p><h2>Bull vs Bear · 시그널 매트릭스</h2></div>
+          <span class="pill">확률·매매신호 아님</span>
+        </div>
+        <div class="debate-grid">
+          <article class="debate-card bull-card"><div class="debate-head"><div><span class="debate-kicker">BULL CASE</span><h3>긍정 논리</h3></div><b id="bullStrength">-</b></div><p id="bullSummary" class="debate-summary">데이터 대기</p><ul id="bullArguments"></ul></article>
+          <article class="debate-card bear-card"><div class="debate-head"><div><span class="debate-kicker">BEAR CASE</span><h3>반대 논리</h3></div><b id="bearStrength">-</b></div><p id="bearSummaryPro" class="debate-summary">데이터 대기</p><ul id="bearArgumentsPro"></ul></article>
+        </div>
+        <div id="signalMatrix" class="signal-matrix"></div>
+      </section>
+
+      <section id="scenarios" class="section-card">
+        <div class="section-title"><div><p class="eyebrow">CONDITION SCENARIOS</p><h2>상방 · 기준 · 하방 조건 시나리오</h2></div><span class="pill">조건 기반</span></div>
+        <div id="scenarioGrid" class="scenario-grid"></div>
+        <p id="scenarioCaveat" class="scenario-caveat">상승확률·목표가가 아니라 리서치 조건을 비교하는 프레임입니다.</p>
+      </section>
+
+      <section id="chart" class="section-card">
+        <div class="section-title">
+          <div><p class="eyebrow">PRICE & TREND</p><h2>주가 · 이동평균 · 거래량</h2></div>
+          <span class="pill">최근 120거래일</span>
+        </div>
+        <div class="chart-legend">
+          <span>종가</span><span>MA5</span><span>MA20</span><span>MA60</span><span>MA120</span><span>거래량</span>
+        </div>
+        <div class="chart-wrap"><canvas id="priceChart" aria-label="주가 차트"></canvas></div>
+        <div id="chartSummary" class="chart-summary">데이터 대기</div>
+      </section>
+
+      <section class="two-col">
+        <article id="flow" class="section-card">
+          <div class="section-title"><div><p class="eyebrow">FLOW</p><h2>투자자 수급</h2></div><span class="pill">5일 / 20일</span></div>
+          <div id="flowTable" class="flow-table empty">데이터 대기</div>
+        </article>
+        <article id="market" class="section-card">
+          <div class="section-title"><div><p class="eyebrow">MARKET</p><h2>시장환경</h2></div></div>
+          <div id="marketCards" class="market-cards empty">데이터 대기</div>
+        </article>
+      </section>
+
+      <section class="two-col">
+        <article id="news" class="section-card">
+          <div class="section-title"><div><p class="eyebrow">NEWS</p><h2>최근 뉴스</h2></div><span id="newsSentiment" class="pill">대기</span></div>
+          <div id="newsList" class="news-list empty">데이터 대기</div>
+        </article>
+        <article id="committee" class="section-card">
+          <div class="section-title"><div><p class="eyebrow">BEAR CASE</p><h2>반대 논리</h2></div><span id="bearLevel" class="pill">대기</span></div>
+          <div id="bearContent" class="stack empty">데이터 대기</div>
+        </article>
+      </section>
+
+      <section class="three-col">
+        <article class="section-card compact"><h3>긍정 요인</h3><ul id="positiveReasons"></ul></article>
+        <article class="section-card compact"><h3>부정 요인</h3><ul id="negativeReasons"></ul></article>
+        <article class="section-card compact"><h3>진입 확인조건</h3><ul id="entryConditions"></ul></article>
+      </section>
+
+      <section class="section-card compact"><h3>무효화 조건</h3><ul id="invalidConditions"></ul><p class="disclaimer" id="disclaimer">연구·의사결정 지원용 분석이며 수익을 보장하지 않습니다.</p></section>
+    </main>
+  </div>
+  <nav class="mobile-bottom-nav" aria-label="모바일 주요 메뉴">
+    <a href="#candidates"><span>⌂</span><b>홈</b></a>
+    <a href="#portfolio"><span>◎</span><b>보유/Exit</b></a>
+    <a href="#overview"><span>⌕</span><b>검색</b></a>
+    <a href="#news"><span>▤</span><b>뉴스</b></a>
+    <a href="#scores"><span>•••</span><b>더보기</b></a>
+  </nav>
+  <script src="/app.js" defer></script>
+</body>
+</html>
