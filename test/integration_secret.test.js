@@ -5,6 +5,7 @@ import { redactSecrets, safeErrorMessage } from '../src/services/secret_redactor
 
 process.env.KSTOCK_LIVE_TRADING_ENABLED = 'false';
 process.env.KSTOCK_AI_MODE = 'mock';
+const NOW = Date.parse('2026-09-14T00:00:00Z');
 
 function forbidExternalFetch() {
   const originalFetch = globalThis.fetch;
@@ -18,13 +19,14 @@ test('safe pipeline combines KIS quote and OpenDART financials using stubs only'
   const restore = forbidExternalFetch();
   const calls = [];
   const pipeline = createSafeDataPipeline({
+    now: () => NOW,
     kisRequest: async (input) => {
       calls.push(input);
-      return { rt_cd: '0', output: { stck_prpr: '70100' } };
+      return { rt_cd: '0', output: { stck_prpr: '70100', timestamp: '2026-09-13T23:55:00Z' } };
     },
     dartRequest: async (input) => {
       calls.push(input);
-      return { status: '000', list: [{ account_nm: '매출액', thstrm_amount: '1000' }] };
+      return { status: '000', list: [{ account_nm: '매출액', thstrm_amount: '1000', rcept_dt: '2026-03-31T00:00:00Z' }] };
     },
     sleep: async () => { throw new Error('sleep should not be used on success'); },
     liveTradingEnabled: false,
@@ -45,7 +47,8 @@ test('safe pipeline retries only OpenDART transient failures and remains bounded
   let dartCalls = 0;
   const sleepCalls = [];
   const pipeline = createSafeDataPipeline({
-    kisRequest: async () => ({ rt_cd: '0', output: { stck_prpr: '70000' } }),
+    now: () => NOW,
+    kisRequest: async () => ({ rt_cd: '0', output: { stck_prpr: '70000', timestamp: '2026-09-13T23:55:00Z' } }),
     dartRequest: async () => {
       dartCalls += 1;
       if (dartCalls < 3) {
@@ -53,7 +56,7 @@ test('safe pipeline retries only OpenDART transient failures and remains bounded
         error.code = 'TIMEOUT';
         throw error;
       }
-      return { status: '000', list: [] };
+      return { status: '000', list: [{ account_nm: '매출액', thstrm_amount: '1000', rcept_dt: '2026-03-31T00:00:00Z' }] };
     },
     sleep: async (ms) => { sleepCalls.push(ms); },
   });
