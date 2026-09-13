@@ -1,0 +1,25 @@
+project: k-stock-ai
+repo: Naharuya/k-stock-ai
+protected_branches: [master]
+debounce_seconds: 1200
+max_auto_repair_attempts: 2
+require_human_for:
+  - live_trading_enable
+  - broker_credential_change
+  - production_deploy
+checks:
+  - name: node-tests
+    command: npm test
+  - name: smoke
+    command: npm run smoke
+  - name: live-trading-hard-stop
+    command: node -e "if (process.env.KSTOCK_LIVE_TRADING_ENABLED === 'true') process.exit(2); console.log('live trading disabled')"
+  - name: external-request-guard
+    command: node --test
+    note: tests must use mocks/stubs and must not make real trades or uncontrolled external requests
+release_policy:
+  server_pass_required: true
+  device_pass_required: false
+  release_approved_required: true
+  auto_merge: false
+  auto_publish: false
