@@ -1,6 +1,7 @@
 import { createKisMarketClient } from './kis_market_client.js';
 import { createOpenDartClient } from './opendart_client.js';
 import { createSafeRetry, isRetryableOpenDartError } from './safe_retry.js';
+import { validateSnapshot } from './data_quality.js';
 
 export function createSafeDataPipeline({ kisRequest, dartRequest, sleep = async () => {}, liveTradingEnabled = false }) {
   const kis = createKisMarketClient({ request: kisRequest, liveTradingEnabled });
@@ -20,13 +21,13 @@ export function createSafeDataPipeline({ kisRequest, dartRequest, sleep = async 
       ),
     ]);
 
-    return {
+    return validateSnapshot({
       symbol,
       corpCode,
       quote,
       financials,
       liveTradingEnabled: false,
-    };
+    });
   }
 
   return { loadSnapshot };
