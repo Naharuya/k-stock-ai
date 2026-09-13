@@ -10,7 +10,8 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "smoke": "node src/smoke_test.js",
-    "test": "node --test"
+    "test": "node --test",
+    "operations:morning-check": "node scripts/operations_morning_check.mjs"
   },
   "dependencies": {
     "dotenv": "latest",
