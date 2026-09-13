@@ -5,6 +5,7 @@ import { createSafeDataPipeline } from '../src/services/safe_data_pipeline.js';
 
 process.env.KSTOCK_LIVE_TRADING_ENABLED = 'false';
 process.env.KSTOCK_AI_MODE = 'mock';
+const NOW = Date.parse('2026-09-14T00:00:00Z');
 
 function forbidExternalFetch() {
   const originalFetch = globalThis.fetch;
@@ -65,8 +66,9 @@ test('snapshot validation fails closed when identifiers or nested data are inval
 test('safe data pipeline rejects corrupted KIS market data without external calls', async () => {
   const restore = forbidExternalFetch();
   const pipeline = createSafeDataPipeline({
-    kisRequest: async () => ({ rt_cd: '0', output: { stck_prpr: '-500', acml_vol: '10' } }),
-    dartRequest: async () => ({ status: '000', list: [{ account_nm: '매출액', thstrm_amount: '1000' }] }),
+    now: () => NOW,
+    kisRequest: async () => ({ rt_cd: '0', output: { stck_prpr: '-500', acml_vol: '10', timestamp: '2026-09-13T23:55:00Z' } }),
+    dartRequest: async () => ({ status: '000', list: [{ account_nm: '매출액', thstrm_amount: '1000', rcept_dt: '2026-03-31T00:00:00Z' }] }),
   });
 
   try {
@@ -82,8 +84,9 @@ test('safe data pipeline rejects corrupted KIS market data without external call
 test('safe data pipeline returns only validated normalized data', async () => {
   const restore = forbidExternalFetch();
   const pipeline = createSafeDataPipeline({
-    kisRequest: async () => ({ rt_cd: '0', output: { stck_prpr: '70000', acml_vol: '123456' } }),
-    dartRequest: async () => ({ status: '000', list: [{ account_nm: '매출액', thstrm_amount: '1000000' }] }),
+    now: () => NOW,
+    kisRequest: async () => ({ rt_cd: '0', output: { stck_prpr: '70000', acml_vol: '123456', timestamp: '2026-09-13T23:55:00Z' } }),
+    dartRequest: async () => ({ status: '000', list: [{ account_nm: '매출액', thstrm_amount: '1000000', rcept_dt: '2026-03-31T00:00:00Z' }] }),
   });
 
   try {

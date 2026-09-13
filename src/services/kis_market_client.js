@@ -1,3 +1,8 @@
+function toNumber(value) {
+  if (typeof value === 'string') return Number(value.replaceAll(',', '').trim());
+  return Number(value);
+}
+
 export function createKisMarketClient({ request, liveTradingEnabled = false }) {
   if (typeof request !== 'function') {
     throw new TypeError('KIS request function is required');
@@ -24,7 +29,7 @@ export function createKisMarketClient({ request, liveTradingEnabled = false }) {
 
     return {
       symbol,
-      price: Number(response.output?.stck_prpr),
+      price: toNumber(response.output?.stck_prpr),
       raw: response.output ?? {},
     };
   }
