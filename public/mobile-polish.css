@@ -1,0 +1,48 @@
+:root{--bg:#f3f5f1;--ink:#192e2a;--muted:#64746e;--line:#e1e8e1;--accent:#24684f;--nav:#102e27;--green:#247551;--shadow:0 6px 24px rgba(20,53,38,.035)}
+body{font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif;letter-spacing:-.025em}
+button,input,select{font:inherit}button,a,input,select{-webkit-tap-highlight-color:transparent}button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #81b494;outline-offset:4px}button{transition:background .15s,transform .15s}button:active{transform:translateY(1px)}button:disabled{opacity:.55;cursor:wait}
+.ui-icon{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none;vertical-align:middle}
+.brand-mark{background:transparent;padding:0;overflow:hidden}.brand-mark img{width:100%;height:100%;display:block}
+.sidebar{background:#102e27}.sidebar nav a.active,.sidebar nav a:hover{background:#24473b}.sidebar nav{margin-top:28px}.sidebar-note{border-color:#365548}
+.section-card,.hero-card{border-radius:22px;box-shadow:var(--shadow)}.section-title h2{letter-spacing:-.04em}.pill{background:#eef3ec;color:#466452;font-weight:650}
+#morningBrief{border:1px solid #d8e2d6;padding:28px;background:linear-gradient(150deg,#fff 55%,#f4f8ec);overflow:hidden;position:relative}
+#morningBrief .section-title{margin-bottom:10px;align-items:start}#morningBrief .section-title h2{font-size:29px;line-height:1.2;max-width:380px}
+.morning-kicker{font-size:11px;font-weight:800;letter-spacing:.16em;color:#64835d;margin:0 0 10px}
+#morningState{color:#69796a!important;font-size:12px!important}#morningBrief .daily-stats{grid-template-columns:1.4fr 1fr;gap:12px;margin:22px 0 14px}
+#morningBrief .daily-stats>div{padding:16px;background:rgba(232,240,225,.64);border-radius:16px;color:#65775f;font-size:11px}
+#morningBrief .daily-stats strong{display:block;font-size:19px;letter-spacing:-.025em;margin-top:9px;color:#234a32}
+#morningBrief h3{font-size:15px;margin:22px 0 10px}#morningPortfolio{padding:12px 15px;border:1px solid #e2e9de;border-radius:12px;background:#fff;color:#455e4c;line-height:1.7}
+#morningCandidates{display:flex;flex-direction:column;gap:0;border:1px solid #e0e7dc;border-radius:17px;background:#fff;overflow:hidden}
+#morningCandidates .daily-stock{display:grid;grid-template-columns:1fr auto;border:0;border-radius:0;padding:16px;gap:7px 12px;box-shadow:none;border-bottom:1px solid #e9eee5;background:none}
+#morningCandidates .daily-stock:last-child{border-bottom:0}#morningCandidates .daily-stock strong{font-size:15px;line-height:1.5}
+#morningCandidates .daily-stock p{grid-column:1;margin:0;color:#6c7968;font-size:12px;line-height:1.65;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#morningCandidates .daily-detail{grid-column:2;grid-row:1/3;align-self:center;margin:0;width:44px;height:44px;min-height:44px;background:#f1f5ed;color:#426742;padding:0;font-size:0;border-radius:50%}
+#morningCandidates .daily-detail:after{content:"›";font-size:25px;font-weight:400}
+#morningCandidates:empty{padding:28px 22px}#morningCandidates:empty:before{content:"오늘의 브리핑을 준비해 보세요";display:block;font-size:15px;font-weight:700;color:#39543d}#morningCandidates:empty:after{content:"전체 분석을 실행하면 관심종목과 위험 요인을 한곳에서 확인할 수 있어요.";display:block;font-size:12px;color:#7b8876;line-height:1.8;margin-top:8px}
+#morningBasis{font-size:11px!important;color:#84907d;line-height:1.6!important}
+#morningMessage:empty{display:none}#morningMessage:not(:empty){padding:12px;background:#fff5df;border-radius:10px;color:#856323}
+#morningBrief .candidate-toolbar{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}
+#morningBrief .candidate-toolbar button{padding:12px 10px;min-height:46px;background:#edf2e9;color:#4f6648;border:0;border-radius:12px;font-size:12px;font-weight:650}
+#morningBrief [data-morning-scope=all]{background:#20563f!important;color:#fff!important}#morningBrief details{border-top:1px solid #e2e9dd;margin-top:20px;padding-top:15px;color:#6f7d68;font-size:12px}summary{cursor:pointer;line-height:1.6}#morningImport{border:1px solid #d9e4d3;border-radius:10px;background:white;color:#45663d;padding:8px 14px}
+.daily-section{border-top-color:#8cac7c}.daily-stock{border-radius:16px}.daily-detail{background:#edf3e7;color:#3f6540}
+.topbar h1{font-size:26px}.searchbar input:focus{border-color:#608268;box-shadow:0 0 0 3px #e9f0e5}.primary-card{background:linear-gradient(130deg,#173c32,#285f47)}.section-card .eyebrow{color:#84927d}.portfolio-section{border-top-color:#73996d}
+.position-card{border-left-width:3px;border-radius:18px;padding:18px}.position-metrics div{background:#f3f6f0;padding:12px}.position-head strong{font-size:18px}.position-actions button{background:#28553e}.entry-manager{border-top-color:#82a072}.entry-form button{background:#285b40}
+.install-action{display:inline-flex;align-items:center;gap:7px;color:#496147;font-size:12px;text-decoration:none;padding:10px 12px;border:1px solid #dce6d6;border-radius:10px;background:#fff;min-height:42px}.install-action .ui-icon{width:17px;height:17px}.install-help{font-size:12px;color:#6d7e64;line-height:1.7}
+.network-banner{display:none;position:sticky;top:0;z-index:200;padding:10px 18px;background:#fff0cc;color:#755519;text-align:center;font-size:12px}.network-banner.is-offline{display:block}
+@media(max-width:760px){
+body{padding-top:calc(68px + env(safe-area-inset-top));padding-bottom:calc(80px + env(safe-area-inset-bottom))}
+main{padding:10px 16px 26px}
+.mobile-appbar{height:calc(68px + env(safe-area-inset-top));padding:calc(10px + env(safe-area-inset-top)) 20px 10px;background:rgba(243,245,241,.96);color:#183c2c;box-shadow:none;border-bottom:1px solid #e1e7dc;backdrop-filter:blur(14px)}
+.mobile-brand strong{color:#173d2a;font-size:17px;letter-spacing:-.05em}.mobile-brand small{color:#829079;font-size:10px}.mobile-appbar .brand-mark{width:36px;height:36px;border-radius:11px}.mobile-search{display:grid;place-items:center;background:#e6ece0!important;color:#426344!important;width:39px;height:39px;border-radius:50%!important}
+.mobile-bottom-nav{height:calc(68px + env(safe-area-inset-bottom));padding:7px 8px calc(7px + env(safe-area-inset-bottom));border-top:1px solid #e2e8dc;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);box-shadow:0 -3px 16px #1a3a2410}
+.mobile-bottom-nav a,.mobile-bottom-nav a:nth-child(2),.mobile-bottom-nav a:first-child{color:#84927e;gap:5px}.mobile-bottom-nav .ui-icon{width:21px;height:21px}.mobile-bottom-nav a[aria-current=true]{color:#235838}.mobile-bottom-nav a[aria-current=true] .ui-icon{background:#e8f1df;box-sizing:content-box;padding:4px 17px;border-radius:20px;margin-top:-4px;margin-bottom:-4px}.mobile-bottom-nav b{font-size:10px;font-weight:650}
+#morningBrief{padding:22px 18px;border-radius:22px;margin-top:8px;margin-bottom:8px}#morningBrief .section-title{gap:8px;flex-direction:column}#morningBrief .section-title h2{font-size:26px;max-width:none}#morningSchedule{position:static;font-size:10px;padding:5px 8px;margin-top:3px}
+#morningBrief .daily-stats{margin-top:18px}#morningBrief .daily-stats>div{padding:14px 12px}#morningBrief .daily-stats strong{font-size:16px}
+#morningBrief .daily-stock{padding:14px}#morningBrief .daily-stock strong{font-size:14px}#morningPortfolio{font-size:12px!important;margin-top:6px}
+.section-card{padding:19px;border-radius:20px}.section-title h2{font-size:18px}.searchbar input,.entry-form input{font-size:16px}
+.position-actions .position-delete{background:transparent;font-size:12px;color:#9b7261}.position-metrics b{font-size:16px}.position-metrics span{font-size:11px}.position-head{gap:8px}.position-head strong{font-size:17px}
+.network-banner{top:calc(68px + env(safe-area-inset-top))}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+
+[hidden]{display:none!important}

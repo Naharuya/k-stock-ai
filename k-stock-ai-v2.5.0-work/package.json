@@ -1,0 +1,41 @@
+{
+  "name": "k-stock-ai",
+  "version": "2.5.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "smoke": "node src/smoke_test.js",
+    "dart:check": "node src/dart_smoke_test.js",
+    "dart:analyze": "node src/dart_analysis_smoke_test.js",
+    "score:check": "node src/scoring_smoke_test.js",
+    "kis:check": "node src/kis_quote_smoke_test.js",
+    "market:analyze": "node src/market_analysis_smoke_test.js",
+    "flow:check": "node src/flow_smoke_test.js",
+    "market:check": "node src/market_context_smoke_test.js",
+    "news:check": "node src/news_smoke_test.js",
+    "committee:check": "node src/committee_smoke_test.js",
+    "research:check": "node src/research_profile_smoke_test.js",
+    "screener:check": "node src/screener_smoke_test.js",
+    "universe:check": "node src/universe_live_smoke_test.js",
+    "screener:live": "node src/screener_live_smoke_test.js",
+    "candidate:check": "node src/candidate_engine_smoke_test.js",
+    "candidate:live": "node src/candidate_engine_live_smoke_test.js",
+    "candidate:balanced": "node src/candidate_engine_balanced_smoke_test.js",
+    "risk:semantic": "node src/disclosure_semantic_smoke_test.js",
+    "dashboard:check": "node src/dashboard_operational_smoke_test.js",
+    "candidate:rank": "node src/candidate_ranking_smoke_test.js",
+    "entry-exit:check": "node src/entry_exit_smoke_test.js"
+  },
+  "dependencies": {
+    "adm-zip": "latest",
+    "dotenv": "latest",
+    "express": "latest",
+    "fast-xml-parser": "latest",
+    "openai": "latest"
+  }
+}

@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {publicIPv4,readPublicNews,extractNewsEvidence,getNewsEvidence} from './services/news_evidence_service.js';
+for(const ip of ['127.0.0.1','10.1.2.3','192.168.0.9','172.16.0.1','169.254.169.254','100.64.0.1','198.19.0.1','::1','0.0.0.0','224.0.0.1'])assert.equal(publicIPv4(ip),false);
+assert.equal(publicIPv4('8.8.8.8'),true);
+await assert.rejects(readPublicNews('https://127.0.0.1/private'),/ADDRESS_REJECTED/);
+await assert.rejects(readPublicNews('http://example.com/article'),/URL_REJECTED/);
+await assert.rejects(readPublicNews('https://user:pass@example.com/article'),/URL_REJECTED/);
+assert.equal(extractNewsEvidence('<main>'+('Issuer financial news evidence '.repeat(10))+'</main>','Issuer').status,'PRIMARY_TEXT_COMPANY_MATCH');
+assert.equal(extractNewsEvidence('<main>'+('Issuer news '.repeat(20))+'</main>','Other').factsVerified,false);
+assert.equal(extractNewsEvidence('<script>Issuer</script>','Issuer').status,'ORIGINAL_BODY_NOT_IDENTIFIED');
+const result=await getNewsEvidence({link:'https://news.example/item',sourceUrl:'https://publisher.example',corpName:'Issuer'},{reader:async url=>url.includes('news.example')?{url,html:'<a href="https://publisher.example/article">source</a>'}:{url,html:'<article>'+('Issuer source text '.repeat(20))+'</article>'}});
+assert.equal(result.status,'PRIMARY_TEXT_COMPANY_MATCH');assert.equal(result.factsVerified,false);
+const missing=await getNewsEvidence({link:'https://news.example/item',sourceUrl:'https://publisher.example',corpName:'Issuer'},{reader:async url=>({url,html:'<main>aggregator only</main>'})});
+assert.equal(missing.status,'ORIGINAL_URL_UNRESOLVED');
+console.log('News evidence: private IPs, credentials, HTTP rejected; publisher match, article extraction, unresolved source and no false fact-verification passed.');

@@ -1,4 +1,11 @@
-node_modules/
 .env
-npm-debug.log*
-.DS_Store
+node_modules/
+.cache/
+
+.data/
+
+tmp/
+
+android/build/
+public/downloads/*.apk
+public/downloads/*.idsig
