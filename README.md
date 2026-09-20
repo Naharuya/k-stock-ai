@@ -23,8 +23,22 @@
 
 ## 권장 환경
 
+- Mac mini 상시 운영 노드
 - Node.js 22 이상
-- VS Code
+- Git / GitHub CLI
+
+## 개인용 Mac mini 운영 원칙
+
+K-Stock AI는 당분간 개인용 리서치 시스템으로만 운영합니다. Windows/모바일을 주 실행 노드로 사용하지 않고 Mac mini의 AI/에이전트가 분석·스케줄·검증 업무를 담당합니다.
+
+안전 기본값은 고정합니다.
+
+```env
+KSTOCK_LIVE_TRADING_ENABLED=false
+KSTOCK_BROKER_ENABLED=false
+```
+
+브로커 API가 데이터 조회 목적으로 향후 사용되더라도 주문 실행 경로는 별도 승인 없이 활성화하지 않습니다. 자동 주문, 실계좌 주문, 주문 스케줄러는 운영 범위에 포함하지 않습니다.
 
 ## 1. 설치
 
@@ -36,10 +50,10 @@ npm install
 
 `.env.example`을 복사하여 `.env` 파일을 만듭니다.
 
-Windows PowerShell:
+Mac mini:
 
-```powershell
-Copy-Item .env.example .env
+```bash
+cp .env.example .env
 ```
 
 초기에는 다음 값을 유지하세요.
@@ -75,14 +89,10 @@ http://localhost:3000/health
 
 ## 4. 샘플 분석
 
-PowerShell:
+Mac mini:
 
-```powershell
-Invoke-RestMethod `
-  -Uri "http://localhost:3000/api/test-analysis" `
-  -Method POST `
-  -ContentType "application/json" `
-  -Body "{}"
+```bash
+curl -sS -X POST http://127.0.0.1:3000/api/test-analysis -H 'content-type: application/json' -d '{}'
 ```
 
 또는 smoke test:
