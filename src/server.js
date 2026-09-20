@@ -6,6 +6,7 @@ import { SAMPLE_STOCK } from "./data/sample_stock.js";
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
+const HOST = process.env.HOST || "127.0.0.1";
 
 app.use(express.json({ limit: "1mb" }));
 
@@ -70,8 +71,8 @@ app.post("/api/analyze", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`K-Stock AI v0.1.0 running on http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`K-Stock AI v0.1.0 running on http://${HOST}:${PORT}`);
   console.log(`Mode: ${process.env.KSTOCK_AI_MODE || "mock"}`);
 
   if (process.env.KSTOCK_LIVE_TRADING_ENABLED === "true") {
