@@ -28,6 +28,16 @@ test("external mode requires bearer token for API routes", async t => {
   t.after(() => child.kill("SIGTERM"));
   await waitForHealth();
 
+  const home = await fetch("http://127.0.0.1:3311/");
+  assert.equal(home.status, 200);
+  assert.match(home.headers.get("content-type"), /text\/html/);
+  assert.match(await home.text(), /공시로 읽는/);
+
+  const styles = await fetch("http://127.0.0.1:3311/styles.css");
+  const css = await styles.text();
+  assert.match(css, /h1 \{ margin-bottom: 15px;[^}]*font-size: 72px/);
+  assert.match(css, /h1 \{ font-size: 68px/);
+
   let r = await fetch("http://127.0.0.1:3311/api/test-analysis", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
   assert.equal(r.status, 401);
 
