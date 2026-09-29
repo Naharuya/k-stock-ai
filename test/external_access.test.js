@@ -47,3 +47,12 @@ test("unsafe trading flags prevent service startup", async () => {
   assert.notEqual(code, 0);
   assert.match(stderr, /refuses to start/);
 });
+
+test("broker flag also prevents service startup", async () => {
+  const child = startServer({ KSTOCK_BROKER_ENABLED: "true" });
+  let stderr = "";
+  child.stderr.on("data", d => { stderr += d.toString(); });
+  const code = await new Promise(resolve => child.on("exit", resolve));
+  assert.notEqual(code, 0);
+  assert.match(stderr, /refuses to start/);
+});
