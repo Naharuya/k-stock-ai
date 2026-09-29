@@ -1,0 +1,22 @@
+[Unit]
+Description=K-Stock AI
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=www-data
+WorkingDirectory=/srv/k-stock-ai/current
+EnvironmentFile=/etc/k-stock-ai/k-stock-ai.env
+ExecStart=/usr/bin/node /srv/k-stock-ai/current/src/server.js
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/srv/k-stock-ai /var/log/k-stock-ai
+UMask=027
+
+[Install]
+WantedBy=multi-user.target
