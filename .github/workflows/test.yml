@@ -11,6 +11,8 @@ permissions:
 
 env:
   KSTOCK_LIVE_TRADING_ENABLED: 'false'
+  KSTOCK_BROKER_ENABLED: 'false'
+  DOTENV_CONFIG_PATH: /dev/null
   KSTOCK_AI_MODE: 'mock'
 
 jobs:
@@ -27,6 +29,11 @@ jobs:
         with:
           node-version: 22
           cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
 
       - name: Install dependencies
         run: npm ci

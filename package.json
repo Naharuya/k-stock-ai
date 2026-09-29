@@ -15,6 +15,7 @@
   "dependencies": {
     "dotenv": "latest",
     "express": "latest",
+    "fast-xml-parser": "^5.11.2",
     "openai": "latest"
   }
 }
