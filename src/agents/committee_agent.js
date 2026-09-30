@@ -26,6 +26,7 @@ EXCLUDE, WATCH, INTEREST, CONDITION_MET, HOLD_MANAGE
 
 export async function runCommitteeAgent(data) {
   return runAgent({
+    agentName: "committee",
     systemPrompt: SYSTEM_PROMPT,
     userPrompt: JSON.stringify(data),
     mockResult: {

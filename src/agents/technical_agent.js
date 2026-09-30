@@ -22,6 +22,7 @@ ${COMMON_RULES}
 
 export async function runTechnicalAgent(data) {
   return runAgent({
+    agentName: "technical",
     systemPrompt: SYSTEM_PROMPT,
     userPrompt: JSON.stringify(data),
     mockResult: {

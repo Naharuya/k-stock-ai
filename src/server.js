@@ -3,6 +3,9 @@ import crypto from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import express from "express";
+import { chmod, mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { analyzeStock } from "./ai_router.js";
 import { SAMPLE_STOCK } from "./data/sample_stock.js";

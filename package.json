@@ -10,9 +10,12 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "smoke": "node src/smoke_test.js",
+    "watchlist": "node src/run_watchlist.js",
+    "schedule:install": "node src/install_schedule.js",
     "test": "node --test"
   },
   "dependencies": {
+    "adm-zip": "^0.6.1",
     "dotenv": "latest",
     "express": "latest",
     "fast-xml-parser": "^5.11.2",

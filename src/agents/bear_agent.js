@@ -19,6 +19,7 @@ ${COMMON_RULES}
 
 export async function runBearAgent(data) {
   return runAgent({
+    agentName: "bear",
     systemPrompt: SYSTEM_PROMPT,
     userPrompt: JSON.stringify(data),
     mockResult: {

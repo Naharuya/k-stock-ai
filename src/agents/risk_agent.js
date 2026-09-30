@@ -23,6 +23,7 @@ LOW, MEDIUM, HIGH, VERY_HIGH
 
 export async function runRiskAgent(data) {
   return runAgent({
+    agentName: "risk",
     systemPrompt: SYSTEM_PROMPT,
     userPrompt: JSON.stringify(data),
     mockResult: {

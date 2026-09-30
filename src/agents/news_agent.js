@@ -22,6 +22,7 @@ ${COMMON_RULES}
 
 export async function runNewsAgent(data) {
   return runAgent({
+    agentName: "news",
     systemPrompt: SYSTEM_PROMPT,
     userPrompt: JSON.stringify(data),
     mockResult: {

@@ -22,6 +22,7 @@ ${COMMON_RULES}
 
 export async function runFlowAgent(data) {
   return runAgent({
+    agentName: "flow",
     systemPrompt: SYSTEM_PROMPT,
     userPrompt: JSON.stringify(data),
     mockResult: {

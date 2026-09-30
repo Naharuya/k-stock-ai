@@ -27,3 +27,9 @@ export function isRetryableOpenDartError(error) {
   const code = error?.code ?? error?.status;
   return code === 'RATE_LIMIT' || code === 'TIMEOUT' || code === '020';
 }
+
+export function isRetryableKisError(error) {
+  const code = error?.code ?? error?.status;
+  if (code === 'RATE_LIMIT' || code === 'TIMEOUT' || code === 'NETWORK_ERROR') return true;
+  return typeof code === 'string' && /^HTTP_5\d\d$/.test(code);
+}

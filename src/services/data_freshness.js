@@ -27,10 +27,33 @@ export function validateFreshness({ quoteTimestamp, financialTimestamp, now = Da
 
 export function deriveQuoteTimestamp(quote) {
   const raw = quote?.raw ?? {};
-  return raw.timestamp ?? raw.as_of ?? raw.stck_bsop_date ?? quote?.timestamp;
+  if (raw.timestamp != null) return raw.timestamp;
+  if (raw.as_of != null) return raw.as_of;
+
+  const businessDate = String(raw.stck_bsop_date ?? '').trim();
+  if (/^\d{8}$/.test(businessDate)) {
+    const time = String(raw.stck_cntg_hour ?? '').trim();
+    const clock = /^\d{6}$/.test(time) ? `${time.slice(0, 2)}:${time.slice(2, 4)}:${time.slice(4, 6)}` : '00:00:00';
+    return `${businessDate.slice(0, 4)}-${businessDate.slice(4, 6)}-${businessDate.slice(6, 8)}T${clock}+09:00`;
+  }
+
+  return quote?.timestamp;
 }
 
 export function deriveFinancialTimestamp(financials) {
   const first = financials?.items?.[0] ?? {};
-  return first.rcept_dt ?? first.bsns_year ?? financials?.timestamp;
+  if (first.rcept_dt != null) {
+    const receiptDate = String(first.rcept_dt).trim();
+    if (/^\d{8}$/.test(receiptDate)) {
+      return `${receiptDate.slice(0, 4)}-${receiptDate.slice(4, 6)}-${receiptDate.slice(6, 8)}T00:00:00Z`;
+    }
+    return first.rcept_dt;
+  }
+  if (financials?.timestamp != null) return financials.timestamp;
+
+  const businessYear = String(first.bsns_year ?? '').trim();
+  if (/^\d{4}$/.test(businessYear)) {
+    return `${businessYear}-12-31T23:59:59.999Z`;
+  }
+  return undefined;
 }

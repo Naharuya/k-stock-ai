@@ -15,7 +15,7 @@ function forbidExternalFetch() {
   return () => { globalThis.fetch = originalFetch; };
 }
 
-test('safe pipeline combines KIS quote and OpenDART financials using stubs only', async () => {
+test('safe pipeline combines KIS quote and OpenDART financials and disclosures using stubs only', async () => {
   const restore = forbidExternalFetch();
   const calls = [];
   const pipeline = createSafeDataPipeline({
@@ -33,11 +33,18 @@ test('safe pipeline combines KIS quote and OpenDART financials using stubs only'
   });
 
   try {
-    const snapshot = await pipeline.loadSnapshot({ symbol: '005930', corpCode: '00126380', year: '2025' });
+    const snapshot = await pipeline.loadSnapshot({
+      symbol: '005930',
+      corpCode: '00126380',
+      year: '2025',
+      disclosureBeginDate: '20260301',
+      disclosureEndDate: '20260331',
+    });
     assert.equal(snapshot.quote.price, 70100);
     assert.equal(snapshot.financials.items.length, 1);
     assert.equal(snapshot.liveTradingEnabled, false);
-    assert.deepEqual(calls.map((x) => x.service).sort(), ['kis', 'opendart']);
+    assert.deepEqual(calls.map((x) => x.service).sort(), ['kis', 'opendart', 'opendart']);
+    assert.deepEqual(calls.filter((x) => x.service === 'opendart').map((x) => x.operation).sort(), ['disclosures', 'financials']);
   } finally {
     restore();
   }
@@ -61,9 +68,45 @@ test('safe pipeline retries only OpenDART transient failures and remains bounded
     sleep: async (ms) => { sleepCalls.push(ms); },
   });
 
-  const snapshot = await pipeline.loadSnapshot({ symbol: '005930', corpCode: '00126380', year: '2025' });
+  const snapshot = await pipeline.loadSnapshot({
+    symbol: '005930',
+    corpCode: '00126380',
+    year: '2025',
+    disclosureBeginDate: '20260301',
+    disclosureEndDate: '20260331',
+  });
   assert.equal(snapshot.financials.status, '000');
-  assert.equal(dartCalls, 3);
+  assert.equal(dartCalls, 4);
+  assert.deepEqual(sleepCalls, [100, 100]);
+});
+
+test('safe pipeline retries transient KIS quote timeouts and remains bounded', async () => {
+  let kisCalls = 0;
+  const sleepCalls = [];
+  const pipeline = createSafeDataPipeline({
+    now: () => NOW,
+    kisRequest: async () => {
+      kisCalls += 1;
+      if (kisCalls < 3) {
+        const error = new Error('temporary quote timeout');
+        error.code = 'TIMEOUT';
+        throw error;
+      }
+      return { rt_cd: '0', output: { stck_prpr: '70000', timestamp: '2026-09-13T23:55:00Z' } };
+    },
+    dartRequest: async () => ({ status: '000', list: [{ account_nm: '매출액', thstrm_amount: '1000', rcept_dt: '2026-03-31T00:00:00Z' }] }),
+    sleep: async (ms) => { sleepCalls.push(ms); },
+  });
+
+  const snapshot = await pipeline.loadSnapshot({
+    symbol: '005930',
+    corpCode: '00126380',
+    year: '2025',
+    disclosureBeginDate: '20260301',
+    disclosureEndDate: '20260331',
+  });
+  assert.equal(snapshot.quote.price, 70000);
+  assert.equal(kisCalls, 3);
   assert.deepEqual(sleepCalls, [100, 200]);
 });
 

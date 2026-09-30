@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { validateFreshness } from '../src/services/data_freshness.js';
+import { deriveFinancialTimestamp, deriveQuoteTimestamp, validateFreshness } from '../src/services/data_freshness.js';
 import { createSafeDataPipeline } from '../src/services/safe_data_pipeline.js';
 
 process.env.KSTOCK_LIVE_TRADING_ENABLED = 'false';
@@ -22,6 +22,31 @@ test('fresh quote and financial timestamps pass with deterministic ages', () => 
   });
   assert.equal(result.quoteAgeMs, 5 * 60 * 1000);
   assert.ok(result.financialAgeMs > 0);
+});
+
+test('DART compact receipt dates and business years derive valid financial timestamps', () => {
+  assert.equal(
+    deriveFinancialTimestamp({ items: [{ rcept_dt: '20260331' }] }),
+    '2026-03-31T00:00:00Z',
+  );
+  assert.equal(
+    deriveFinancialTimestamp({ items: [{ bsns_year: '2025' }] }),
+    '2025-12-31T23:59:59.999Z',
+  );
+
+  const result = validateFreshness({
+    quoteTimestamp: '2026-09-13T23:55:00Z',
+    financialTimestamp: deriveFinancialTimestamp({ items: [{ bsns_year: '2025' }] }),
+    now: NOW,
+  });
+  assert.ok(result.financialAgeMs < 550 * 24 * 60 * 60 * 1000);
+});
+
+test('KIS compact trade date and time derive a Korea-time quote timestamp', () => {
+  assert.equal(
+    deriveQuoteTimestamp({ raw: { stck_bsop_date: '20260914', stck_cntg_hour: '085500' } }),
+    '2026-09-14T08:55:00+09:00',
+  );
 });
 
 test('stale quote fails closed', () => {

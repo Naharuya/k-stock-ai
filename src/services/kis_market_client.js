@@ -3,9 +3,12 @@ function toNumber(value) {
   return Number(value);
 }
 
-export function createKisMarketClient({ request, liveTradingEnabled = false }) {
+export function createKisMarketClient({ request, liveTradingEnabled = false, now = () => Date.now() }) {
   if (typeof request !== 'function') {
     throw new TypeError('KIS request function is required');
+  }
+  if (typeof now !== 'function') {
+    throw new TypeError('now function is required');
   }
   if (liveTradingEnabled) {
     throw new Error('Live trading must remain disabled for this client');
@@ -30,6 +33,7 @@ export function createKisMarketClient({ request, liveTradingEnabled = false }) {
     return {
       symbol,
       price: toNumber(response.output?.stck_prpr),
+      timestamp: new Date(now()).toISOString(),
       raw: response.output ?? {},
     };
   }

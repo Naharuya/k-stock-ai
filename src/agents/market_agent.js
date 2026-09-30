@@ -23,6 +23,7 @@ STRONG_NEGATIVE, NEGATIVE, NEUTRAL, POSITIVE, STRONG_POSITIVE
 
 export async function runMarketAgent(data) {
   return runAgent({
+    agentName: "market",
     systemPrompt: SYSTEM_PROMPT,
     userPrompt: JSON.stringify(data),
     mockResult: {

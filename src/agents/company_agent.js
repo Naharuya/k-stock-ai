@@ -21,6 +21,7 @@ ${COMMON_RULES}
 
 export async function runCompanyAgent(data) {
   return runAgent({
+    agentName: "company",
     systemPrompt: SYSTEM_PROMPT,
     userPrompt: JSON.stringify(data),
     mockResult: {

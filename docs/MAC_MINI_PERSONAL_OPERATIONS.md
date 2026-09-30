@@ -42,3 +42,12 @@ Engineering queue:
 Change -> Offline tests -> Verification -> Branch/PR -> Human review
 
 Real trading remains outside both queues.
+
+## Scheduled watchlist research
+
+- The private `data/watchlist.json` file contains the symbols to analyze. Keep the list at 10 stocks or fewer because local inference is sequential.
+- `npm run watchlist` runs a read-only KIS/OpenDART analysis with the Mac-local Ollama model and writes a private JSON report under `data/reports/`.
+- `npm run schedule:install` installs a per-user LaunchAgent for weekdays at 17:30 KST. It does not run immediately at installation and never enables orders.
+- The same installer keeps the API on `127.0.0.1:3002` at login. An Android phone uses USB `adb reverse tcp:3002 tcp:3002`; the API is not exposed to the LAN.
+- Reports and watchlist files are excluded from Git. `.env` remains the only source of provider credentials.
+- Review the report's `truncated` flag before treating disclosure review as complete.
