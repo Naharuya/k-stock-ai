@@ -57,7 +57,8 @@ export function createKisMarketClient({ request, liveTradingEnabled = false, now
 
     return {
       symbol,
-      items: Array.isArray(response.output2) ? response.output2 : [],
+      priceContract: {verified:true,operation:'daily-prices',adjustmentParameter:'0',basis:'RAW',sourceUrl:'https://github.com/koreainvestment/open-trading-api/blob/main/examples_llm/domestic_stock/inquire_daily_price/inquire_daily_price.py', limitation:'NO_DIVIDEND_REINVESTMENT_OR_ACTION_COVERAGE'},
+      items: Array.isArray(response.output2) ? response.output2 : Array.isArray(response.output) ? response.output : [],
     };
   }
 

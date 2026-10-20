@@ -19,3 +19,10 @@ test("gabia deployment artifacts keep k-stock private behind nginx", () => {
   assert.match(env, /KSTOCK_LIVE_TRADING_ENABLED=false/);
   assert.match(env, /KSTOCK_EXTERNAL_ACCESS_TOKEN=\s*$/m);
 });
+
+test('installer requires reviewed commit and cannot default to moving live master',async()=>{
+ const {spawnSync}=await import('node:child_process');
+ const result=spawnSync('bash',['scripts/install-gabia-server.sh'],{encoding:'utf8'});
+ assert.equal(result.status,64);assert.match(result.stderr,/Fresh install only/);
+ const script=fs.readFileSync('scripts/install-gabia-server.sh','utf8');assert.doesNotMatch(script,/git checkout master|git pull/);assert.ok(script.indexOf('Refusing to overwrite')<script.indexOf('sudo mkdir'));assert.match(script,/git checkout --detach/);assert.match(script,/COMPLETE_WEB_AND_API_REVISION_REQUIRED/);
+});

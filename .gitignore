@@ -2,9 +2,27 @@ node_modules/
 .env
 data/watchlist.json
 data/reports/
+data/v2-input.json
+data/v2/
 android/.gradle/
 android/build/
 android/app/build/
 android/local.properties
 npm-debug.log*
 .DS_Store
+
+ios/build/
+ios/__pycache__/
+ios/**/xcuserdata/
+
+artifacts/release-prep/
+
+# Generated caches and private signing material
+__pycache__/
+*.pyc
+*.keystore
+*.mobileprovision
+*.pem
+
+# Local device/browser screenshots remain review evidence, not source releases
+docs/uiux/*.png

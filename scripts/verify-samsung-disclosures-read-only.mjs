@@ -1,0 +1,21 @@
+import 'dotenv/config';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {writeFile,mkdir} from 'node:fs/promises';
+import {createOpenDartRequest} from '../src/services/opendart_request.js';
+import {createOpenDartClient} from '../src/services/opendart_client.js';
+if(path.resolve(process.cwd())!==path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'))throw new Error('PROJECT_PATH_REQUIRED');
+if(process.argv.length!==3||process.argv[2]!=='--read-only')throw new Error('READ_ONLY_REQUIRED');
+const calls=[];
+const request=createOpenDartRequest({fetchImpl:async(url,options)=>{
+ if(calls.length>=9)throw new Error('READ_BUDGET_EXCEEDED');
+ const parsed=new URL(url);if(parsed.pathname!=='/api/list.json')throw new Error('LIST_ONLY');
+ calls.push({source:'OpenDART list.json',at:new Date().toISOString()});
+ return fetch(url,{...options,redirect:'error'});
+}});
+const result=await createOpenDartClient({request}).getDisclosures({corpCode:'00126380',beginDate:'20260826',endDate:'20261008',maxPages:3});
+const items=result.items.map(x=>({receipt:x.rcept_no,date:x.rcept_dt,title:x.report_nm,sourceUrl:`https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${x.rcept_no}`,reviewStatus:'NOT_REVIEWED'}));
+const audit={collectedAt:new Date().toISOString(),ticker:'005930',scope:{fromDate:'2026-08-26',toDate:'2026-10-08'},windows:result.windows,truncated:result.truncated,corporateActionCoverageVerified:false,reason:'DISCLOSURE_LIST_IS_NOT_EFFECTIVE_DATE_OR_COMPLETE_EVENT_PROOF',items,calls};
+await mkdir('data/v2/verification',{recursive:true,mode:0o700});
+await writeFile(`data/v2/verification/disclosure-audit-${Date.now()}.json`,JSON.stringify(audit),{flag:'wx',mode:0o600});
+console.log(JSON.stringify({calls:calls.length,windows:audit.windows,documents:items.length,truncated:audit.truncated,actionCoverageVerified:false,items}));

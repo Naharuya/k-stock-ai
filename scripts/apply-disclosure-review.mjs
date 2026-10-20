@@ -1,0 +1,14 @@
+import path from 'node:path';import {fileURLToPath} from 'node:url';
+if(path.resolve(process.cwd())!==path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'))throw new Error('PROJECT_PATH_REQUIRED');
+if(process.argv[2]!=='--saved-source'||process.argv.length!==3)throw new Error('SAVED_SOURCE_ONLY');
+import {readFile,readdir,writeFile} from 'node:fs/promises';
+import {reviewDisclosure} from '../src/v2/disclosure_review.js';
+import {runCandidateJob} from '../src/v2/run_candidates.js';
+const dir='data/v2/verification';const folders=(await readdir(dir)).filter(x=>x.startsWith('originals-')).sort();
+const m=JSON.parse(await readFile(`${dir}/${folders.at(-1)}/review-work.json`));
+const documents=m.results.map(r=>reviewDisclosure(r,r.decision));
+const names=(await readdir(dir)).filter(x=>/^(?:entitlement|source-review|source-review-q3)-input-\d+\.json$/.test(x)).sort((a,b)=>Number(a.match(/(\d+)\.json$/)[1])-Number(b.match(/(\d+)\.json$/)[1]));
+const input=JSON.parse(await readFile(`${dir}/${names.at(-1)}`));
+input.companies.find(x=>x.ticker==='005930').krSnapshot.disclosureReview={total:21,retrieved:documents.filter(x=>x.originalStatus==='ORIGINAL_RETRIEVED').length,relevant:documents.filter(x=>x.classification==='RELEVANT').length,notRelevant:documents.filter(x=>x.classification==='NOT_RELEVANT').length,documents,coverageVerified:false,reviewedAt:new Date().toISOString()};
+const file=`${dir}/source-review-input-${Date.now()}.json`;await writeFile(file,JSON.stringify(input),{mode:0o600,flag:'wx'});await runCandidateJob({inputPath:file,outputPath:'data/v2/latest.json'});
+console.log(JSON.stringify({retrieved:21,notRelevant:documents.length,relevant:0,coverageVerified:false}));

@@ -1,0 +1,13 @@
+import path from 'node:path';import {fileURLToPath} from 'node:url';
+if(path.resolve(process.cwd())!==path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'))throw new Error('PROJECT_PATH_REQUIRED');
+import {readFile,writeFile,readdir} from 'node:fs/promises';import {createHash} from 'node:crypto';
+import {verifyEntitlementEvent} from '../src/v2/entitlement_events.js';import {runCandidateJob} from '../src/v2/run_candidates.js';
+if(process.argv[2]!=='--saved-source'||process.argv.length!==3)throw new Error('SAVED_SOURCE_ONLY');
+const html=await readFile('/tmp/kstock-dividend-source.html','utf8'),text=html.replace(/<[^>]*>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ');
+if(!['Quarterly Dividend for Second Quarter 2026','July 30, 2026, approved a dividend plan','Common shares: KRW 374','Record date: June 30, 2026','Scheduled payment date: August 28, 2026'].every(x=>text.includes(x)))throw new Error('SOURCE_CONTENT_MISMATCH');
+const now=new Date().toISOString(),url='https://www.samsung.com/global/ir/reports-disclosures/public-disclosure-view.84746/';
+const e=verifyEntitlementEvent({stockCode:'005930',eventType:'CASH_DIVIDEND',shareClass:'COMMON',announcementDate:'2026-07-30',recordDate:'2026-06-30',exDate:null,paymentDate:'2026-08-28',paymentStatus:'SCHEDULED_NOT_CONFIRMED_PAID',cashPerShare:374,currency:'KRW',confirmed:true,sourceVerified:true,source:'Samsung official IR',sourceUrl:url,sourceDocumentId:'samsung-ir-84746',collectedAt:now,sourceDigest:createHash('sha256').update(html).digest('hex')},now);
+const names=(await readdir('data/v2/verification')).filter(x=>x.startsWith('action-final-input-')).sort();const input=JSON.parse(await readFile('data/v2/verification/'+names.at(-1)));
+const stock=input.companies.find(x=>x.ticker==='005930');stock.krSnapshot.entitlementEvents=[e];
+const file=`data/v2/verification/entitlement-input-${Date.now()}.json`;await writeFile(file,JSON.stringify(input),{flag:'wx',mode:0o600});await runCandidateJob({inputPath:file,outputPath:'data/v2/latest.json'});
+console.log(JSON.stringify({status:e.verificationStatus,missing:e.missingFields,recordDate:e.recordDate,exDate:e.exDate,paymentDate:e.paymentDate,amount:e.cashPerShare,pricePerformance:'PENDING'}));

@@ -1,0 +1,14 @@
+import{readFile,readdir,writeFile}from'node:fs/promises';import{createHash}from'node:crypto';import{reconcileTreasuryBalance}from'../src/v2/treasury_ledger.js';import{runCandidateJob}from'../src/v2/run_candidates.js';import path from'node:path';import{fileURLToPath}from'node:url';
+if(path.resolve(process.cwd())!==path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..')||process.argv.length!==3||process.argv[2]!=='--saved-source')throw Error('PROJECT_SAVED_SOURCE_REQUIRED');
+const dir='data/v2/verification',names=await readdir(dir),latest=p=>names.filter(x=>x.startsWith(p)).sort().at(-1);
+const input=JSON.parse(await readFile(`${dir}/${latest('treasury-input-')}`)),s=input.companies.find(x=>x.ticker==='005930').krSnapshot,r=s.rightsInvestigation;
+const manifest=JSON.parse(await readFile(`${dir}/${latest('kind-actions-')}/body-manifest.json`)),doc=manifest.documents.find(x=>x.acceptanceId==='20260821000785');
+const html=await readFile(doc.bodyFile,'utf8');if(createHash('sha256').update(html).digest('hex')!==doc.bodyDigest||!html.includes('79,870,794'))throw Error('CLOSING_SOURCE_UNVERIFIED');
+const record=s.shareCount.records.find(x=>x.shareClass==='COMMON'),now=new Date().toISOString();
+const opening={stockCode:'005930',shareClass:'COMMON',transactionKind:'OPENING_BALANCE',quantity:record.treasury,asOfDate:record.asOfDate,sourceVerified:record.verificationStatus==='VERIFIED',source:record.source,sourceDocumentId:record.sourceDocumentId,sourceUrl:record.sourceUrl,availableAt:record.availableAt};
+const closing={stockCode:'005930',shareClass:'COMMON',transactionKind:'CLOSING_BALANCE',quantity:79870794,asOfDate:'2026-08-21',sourceVerified:true,source:'KRX KIND 취득 결정의 보유현황',sourceDocumentId:doc.documentId,sourceUrl:doc.bodySourceUrl,availableAt:'2026-08-21T23:59:59+09:00'};
+const events=r.treasuryEvents.filter(x=>x.executionStatus==='EXECUTED');
+const historical=reconcileTreasuryBalance(opening,events,closing,{analysisDate:now,coverageVerified:false});
+if(historical.equationStatus!=='MATCH'||historical.difference!==0)throw Error('HISTORICAL_BALANCE_MISMATCH');
+r.balanceReview={opening,closing,historical,current:{...reconcileTreasuryBalance(opening,[...events,...r.treasuryExecutionReview.events],null,{analysisDate:now}),asOfDate:s.priceHistory.asOfDate},currentClosingBalance:null,otherChangesVerified:false,actualCancellationQuantity:null,reviewedAt:now};
+const file=`${dir}/balance-input-${Date.now()}.json`;await writeFile(file,JSON.stringify(input),{mode:0o600,flag:'wx'});await runCandidateJob({inputPath:file,outputPath:'data/v2/latest.json'});console.log(JSON.stringify({opening:opening.quantity,reportedClosing:closing.quantity,difference:historical.difference,equation:historical.equationStatus,coverageVerified:false,currentStatus:r.balanceReview.current.status}));

@@ -1,0 +1,10 @@
+import path from 'node:path';import {fileURLToPath} from 'node:url';
+if(path.resolve(process.cwd())!==path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'))throw new Error('PROJECT_PATH_REQUIRED');
+import 'dotenv/config';import {readFile,writeFile,mkdir} from 'node:fs/promises';import {createKisRequest} from '../src/services/kis_request.js';import {normalizeIndexPrices} from '../src/v2/benchmark_data.js';import {assertSafeKStockV2Environment} from '../src/v2/scoring.js';
+if(process.argv.length!==3||process.argv[2]!=='--read-only')throw new Error('READ_ONLY_REQUIRED');assertSafeKStockV2Environment(process.env);
+const now=new Date().toISOString();if(now.slice(0,10)!=='2026-10-12')throw new Error('VERIFICATION_DATE_SCOPE_ONLY');
+const calls=[];const request=createKisRequest({fetchImpl:async(url,options)=>{if(calls.length>=3)throw new Error('READ_BUDGET_EXCEEDED');calls.push({operation:new URL(url).pathname,at:new Date().toISOString()});return fetch(url,{...options,redirect:'error'});}});
+const indices=[];for(const [index,symbol]of[['KOSPI','0001'],['KOSDAQ','1001']])indices.push(normalizeIndexPrices(await request({service:'kis',operation:'index-daily',symbol,params:{from:'20260701',to:'20261008'}}),index,now,now));
+if(indices.some(x=>x.status!=='READY'))throw new Error('INDEX_DATA_INCOMPLETE');
+await mkdir('data/v2/verification',{recursive:true,mode:0o700});const stamp=Date.now();await writeFile(`data/v2/verification/benchmark-before-${stamp}.json`,await readFile('data/v2/benchmarks/latest.json'),{flag:'wx',mode:0o600});
+await writeFile(`data/v2/verification/benchmark-audit-${stamp}.json`,JSON.stringify({collectedAt:now,calls,indices}),{flag:'wx',mode:0o600});await writeFile('data/v2/benchmarks/latest.json',JSON.stringify({version:1,analysisDate:now,collectedAt:now,indices}),{mode:0o600});console.log(JSON.stringify({calls:calls.length,indices:indices.map(x=>({index:x.index,count:x.sessions.length,from:x.sessions[0].date,to:x.asOfDate}))}));

@@ -1,0 +1,23 @@
+import 'dotenv/config';import {mkdir,writeFile,readFile,readdir} from 'node:fs/promises';import {createHash} from 'node:crypto';
+if(process.cwd()!=='/Users/ari/ARI/projects/k-stock-ai'||process.argv[2]!=='--read-only'||!process.env.OPENDART_API_KEY)throw Error('READ_ONLY_SCOPE_REQUIRED');
+if(process.env.KSTOCK_BROKER_ENABLED==='true'||process.env.KSTOCK_LIVE_TRADING_ENABLED==='true')throw Error('LIVE_TRADING_FORBIDDEN');
+let items=process.argv[3]==='--follow-up'?[['042700','20260810800065','기타경영사항 확인'],['000990','20261007000288','최신 대량보유 공시 주식수 근거']]:[['000660','20260715000004','증권발행실적'],['000660','20260710000008','정정 유상증자'],['000660','20260807000537','자기주식 처분 결정'],['000660','20260821000495','자기주식 처분 결과'],['000660','20260819800340','소각 결정'],['042700','20260814003665','반기 주식종류']];
+if(['--queue','--prior'].includes(process.argv[3])){const state=JSON.parse(await readFile('data/v2/peer-validation/state.json','utf8'));items=state.jobs.flatMap(j=>j.disclosureReview?.queue||[]).filter(q=>(process.argv[3]!=='--prior'||q.period==='PRIOR_ANNOUNCEMENT')&&q.state==='QUEUED'&&!q.originalArchived&&/^\d{14}$/.test(q.documentId)).sort((a,b)=>a.priority-b.priority||a.disclosureDate.localeCompare(b.disclosureDate)).slice(0,3).map(q=>[q.stockCode,q.documentId,q.documentTitle]);}
+if(process.argv[3]==='--effective-prior')items=[['000660','20260330001812','기간 이전 자기주식 처분 계획'],['000990','20260120000357','기간 이전 자기주식 처분 계획'],['042700','20250519800046','기간 이전 주식소각 효력 확인']];
+if(process.argv[3]==='--h1-baseline')items=[['000660','20260814003509','반기 발행주식수 기준점'],['000990','20260814003091','반기 발행주식수 기준점']];
+if(process.argv[3]==='--issued-priority')items=[['000660','20260128800616','기준점 이전 소각'],['000990','20250915800392','기준점 이전 소각'],['000990','20250923800355','교환사채 발행 결과']];
+if(process.argv[3]==='--treasury-execution')items=[['000660','20260716000582','자기주식 이전 관련 원문'],['000660','20260731000082','자기주식 이전 관련 원문'],['000660','20260821000615','이전 관련 정정 원문']];
+// Reuse preserved sources even if the saved queue has not yet been rebuilt.
+const history=new Map();
+for(const name of (await readdir('data/v2/verification')).filter(n=>/^peer-share-originals-\d+$/.test(n)).sort()){
+ try{const manifest=JSON.parse(await readFile(`data/v2/verification/${name}/manifest.json`,'utf8'));for(const row of manifest.results||[]){const rows=history.get(row.receipt)||[];rows.push(row);history.set(row.receipt,rows);}}catch(e){if(e.code!=='ENOENT')throw e;}
+}
+const skipped=[];const pending=[];
+for(const item of items){const rows=history.get(item[1])||[],archive=rows.findLast(r=>r.status==='ARCHIVED');if(archive){if(createHash('sha256').update(await readFile(archive.file)).digest('hex')!==archive.sha256)throw Error('PRESERVED_ORIGINAL_HASH_MISMATCH');skipped.push({receipt:item[1],reason:'PRESERVED_SOURCE_REUSED'});continue;}
+ const failures=rows.filter(r=>r.status==='SOURCE_UNAVAILABLE'),last=failures.at(-1);
+ if(last&&(['HTTP_401','HTTP_403'].includes(last.reason)||failures.length>=3||Date.now()-Date.parse(last.collectedAt)<Math.min(60000,1000*2**failures.length))){skipped.push({receipt:item[1],reason:failures.length>=3?'RETRY_EXHAUSTED':'AUTH_OR_RETRY_BACKOFF'});continue;}pending.push(item);
+}
+items=pending;
+const folder=`data/v2/verification/peer-share-originals-${Date.now()}`;await mkdir(folder,{mode:0o700});const results=[];
+for(const [ticker,receipt,label]of items){await new Promise(r=>setTimeout(r,1150));const url=new URL('https://opendart.fss.or.kr/api/document.xml');url.searchParams.set('crtfc_key',process.env.OPENDART_API_KEY);url.searchParams.set('rcept_no',receipt);const r={ticker,receipt,label,sourceUrl:`https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${receipt}`,collectedAt:new Date().toISOString()};try{const response=await fetch(url,{redirect:'error',signal:AbortSignal.timeout(15000)});const bytes=Buffer.from(await response.arrayBuffer());if(response.ok&&bytes.length<=20000000&&bytes.subarray(0,2).toString()==='PK'){r.file=`${folder}/${receipt}.zip`;await writeFile(r.file,bytes,{mode:0o600,flag:'wx'});r.sha256=createHash('sha256').update(bytes).digest('hex');r.status='ARCHIVED';}else{r.status='SOURCE_UNAVAILABLE';r.reason=bytes.toString().match(/<status>(\d+)<\/status>/)?.[1]||`HTTP_${response.status}`;}}catch{r.status='SOURCE_UNAVAILABLE';r.reason='READ_ONLY_REQUEST_FAILED';}results.push(r);}
+await writeFile(`${folder}/manifest.json`,JSON.stringify({checkedAt:new Date().toISOString(),externalRequests:items.length,automaticCollectionEnabled:false,skipped,results},null,2),{mode:0o600,flag:'wx'});console.log(JSON.stringify({folder,requests:items.length,skipped,results:results.map(({ticker,receipt,status,reason})=>({ticker,receipt,status,reason}))}));

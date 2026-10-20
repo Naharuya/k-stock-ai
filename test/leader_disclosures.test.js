@@ -127,3 +127,16 @@ test("SEC service parses holdings from the latest 13F XML table", async () => {
   assert.equal(calls.length, 3);
   assert.match(portfolio.holdingsUrl, /index\.json$/);
 });
+test('SEC portfolio permits official underscore XSL paths and rejects traversal', async () => {
+  const data = makeSubmissions();
+  data.filings.recent.primaryDocument[1] = 'xslForm13F_X02/primary_doc.xml';
+  const service = createLeaderDisclosureService({ request: async url => {
+    if (url.endsWith('.json') && url.includes('submissions')) return { ok: true, json: async () => data };
+    if (url.endsWith('index.json')) return { ok: true, json: async () => ({ directory: { item: [{ name: 'table.xml' }] } }) };
+    return { ok: true, text: async () => '<informationTable><infoTable><nameOfIssuer>Fixture</nameOfIssuer><cusip>123456789</cusip><value>10</value><shrsOrPrnAmt><sshPrnamt>1</sshPrnamt></shrsOrPrnAmt></infoTable></informationTable>' };
+  } });
+  assert.equal((await service.getBerkshirePortfolio()).holdings.length, 1);
+  data.filings.recent.primaryDocument[1] = '../private.xml';
+  const unsafe = createLeaderDisclosureService({ request: async () => ({ ok: true, json: async () => data }) });
+  await assert.rejects(unsafe.getBerkshirePortfolio(), /identifiers/);
+});

@@ -1,0 +1,16 @@
+import{readFile,readdir,writeFile}from'node:fs/promises';import{createHash}from'node:crypto';import assert from'node:assert/strict';import path from'node:path';import{fileURLToPath}from'node:url';
+import{buildOfficialBalancePeriods}from'../src/v2/treasury_balance_periods.js';import{runCandidateJob}from'../src/v2/run_candidates.js';
+if(path.resolve(process.cwd())!==path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..')||process.argv.length!==3||process.argv[2]!=='--saved-source')throw Error('PROJECT_SAVED_SOURCE_REQUIRED');
+const dir='data/v2/verification',files=await readdir(dir),file=files.filter(x=>x.startsWith('oct8-input-')).sort().at(-1),input=JSON.parse(await readFile(`${dir}/${file}`)),before=structuredClone(input);
+const s=input.companies.find(c=>c.ticker==='005930').krSnapshot,r=s.rightsInvestigation,b=r.balanceReview,now=new Date().toISOString();
+const raw=await readFile('/tmp/kstock-reset-ir-aug21.html'),text=raw.toString();
+if(!text.includes('79,870,794')||!text.includes('End quantity')||!text.includes('number of shares held on August 21, 2026'))throw Error('OFFICIAL_BALANCE_DATE_NOT_CONFIRMED');
+const url='https://www.samsung.com/global/ir/reports-disclosures/public-disclosure-view.84756/';
+const points=[{...b.opening,disclosureDate:'2026-08-14'},{...b.closing,disclosureDate:'2026-08-21',balanceAsOfDate:'2026-08-21',crossCheck:{source:'Samsung official IR',sourceUrl:url,sourceDocumentId:'84756',sourceDigest:createHash('sha256').update(raw).digest('hex'),collectedAt:now}}];
+b.officialPeriods=buildOfficialBalancePeriods(points,[...r.treasuryEvents.filter(e=>e.executionStatus==='EXECUTED'),...r.treasuryExecutionReview.events],{stockCode:'005930',shareClass:'COMMON',analysisDate:now,requestedDate:s.priceHistory.asOfDate});
+b.officialPeriods.currentTransactions={actualAcquisition:r.treasuryExecutionReview.actualQuantity,actualDisposal:null,actualCancellation:null,fromDate:points[1].asOfDate,toDate:s.priceHistory.asOfDate,verificationStatus:'PENDING_VERIFICATION'};
+for(const c of input.companies)if(c.ticker!=='005930')assert.deepEqual(c,before.companies.find(x=>x.ticker===c.ticker));assert.deepEqual(input.evidence,before.evidence);assert.deepEqual(s.priceHistory,before.companies.find(c=>c.ticker==='005930').krSnapshot.priceHistory);
+await writeFile(`${dir}/official-ir-balance-${Date.now()}.html`,raw,{mode:0o600,flag:'wx'});
+await writeFile(`${dir}/official-period-audit-${Date.now()}.json`,JSON.stringify({collectedAt:now,providerHttpReads:1,webSearchCalls:1,webOpenCalls:1,sourceUrl:url,sourceDigest:createHash('sha256').update(raw).digest('hex'),documentId:'84756',balanceAsOfDate:'2026-08-21',disclosureDate:'2026-08-21',quantity:79870794,requestedSourceStatus:'SOURCE_NOT_CONFIRMED',economicCoverageVerified:false}),{mode:0o600,flag:'wx'});
+const output=`${dir}/official-period-input-${Date.now()}.json`;await writeFile(output,JSON.stringify(input),{mode:0o600,flag:'wx'});await runCandidateJob({inputPath:output,outputPath:'data/v2/latest.json'});
+console.log(JSON.stringify({officialDate:b.officialPeriods.latestOfficial.asOfDate,quantity:b.officialPeriods.latestOfficial.quantity,intervals:b.officialPeriods.intervals.map(i=>({from:i.opening.asOfDate,to:i.closing.asOfDate,result:i.result})),requestedSource:b.officialPeriods.requestedSource,appleSecRawPreserved:true}));

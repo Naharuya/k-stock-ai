@@ -1,23 +1,35 @@
 <!doctype html>
-<html lang="ko">
+<html lang="ko" data-theme="light">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f4f4ee">
-  <title>K-Stock | 공시 리서치</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2563EB">
+  <title>K-Stock AI | 근거로 보는 투자 연구</title>
   <link rel="stylesheet" href="/styles.css">
+  <script src="/paper-backup.js" defer></script>
   <script src="/app.js" defer></script>
   <link rel="stylesheet" href="/workspace-navigation.css">
   <script src="/workspace-navigation.js" defer></script>
+  <script src="/research-progress.js" defer></script>
 </head>
 <body>
   <div class="shell">
     <aside class="rail" aria-label="주요 메뉴">
-      <a class="wordmark" href="/" aria-label="K-Stock 홈">K<span>.</span></a>
+      <a class="wordmark" href="#overview" aria-label="K-Stock 홈">K<span>.</span></a><div class="brand-name">K-Stock AI<small>근거로 보는 투자 연구</small></div>
       <div class="rail-label">리서치</div>
-      <a class="rail-link active" href="#overview"><span class="rail-mark">01</span>공시 브리핑</a>
-      <a class="rail-link" href="#holdings"><span class="rail-mark">02</span>보유 종목</a>
-      <a class="rail-link" href="#sources"><span class="rail-mark">03</span>공식 출처</a>
+      <a class="rail-link active" href="#overview">홈</a>
+      <a class="rail-link" href="#trade-recommendations">매수·매도 판단</a><a class="rail-link" href="#investment-signals">투자 신호</a>
+      <a class="rail-link" href="#global-influence">영향력 인물</a>
+      <a class="rail-link" href="#research-results">연구 결과</a>
+      <a class="rail-link" href="#market-analysis">시장 분석</a>
+      <div class="rail-label rail-group">기업 분석</div><a class="rail-link" href="#candidates">후보</a>
+      <a class="rail-link" href="#peer-validation">동종기업 비교</a>
+
+      <a class="rail-link" href="#stock-analysis">종목 분석</a>
+      <a class="rail-link" href="#paper-portfolio">모의 포트폴리오</a>
+      <a class="rail-link" href="#performance">보고서·성과</a>
+      <div class="rail-label rail-group">데이터와 운영</div><a class="rail-link" href="#agent-dashboard">검증 운영</a><a class="rail-link" href="#settings">설정</a>
+      <a class="rail-link" href="#holdings">미국 공시</a>
       <div class="rail-bottom">
         <span class="live-dot" aria-hidden="true"></span>
         <span id="server-state">연결 확인 중</span>
@@ -26,11 +38,61 @@
 
     <main id="overview" class="main">
       <header class="topbar">
-        <div class="breadcrumb">K-STOCK AI <span>/</span> OWNERSHIP DESK</div>
-        <div class="topbar-right"><span class="status-dot" id="health-dot"></span><span id="health-label">서버 확인 중</span><time id="today"></time></div>
+        <div class="breadcrumb"><strong>K-Stock AI</strong><span>/</span>공식 근거로 보는 시장</div>
+        <div class="topbar-right"><span class="status-dot" id="health-dot"></span><span id="health-label">서버 확인 중</span><time id="today"></time><details data-evidence-key="static-disclosure-1" class="workspace-menu"><summary aria-label="전체 화면 메뉴">전체 메뉴</summary><nav aria-label="전체 화면"><a href="#trade-recommendations">매수·매도 판단</a><a href="#overview">홈</a><a href="#investment-signals">투자 신호</a><a href="#global-influence">영향력 인물</a><a href="#research-results">연구 결과</a><a href="#market-analysis">시장 분석</a><a href="#stock-analysis">종목 분석</a><a href="#peer-validation">동종기업 비교</a><a href="#candidates">후보</a><a href="#paper-portfolio">모의 포트폴리오</a><a href="#performance">성과·벤치마크</a><a href="#agent-dashboard">검증 운영</a><a href="#holdings">미국 공시</a><a href="#settings">설정</a></nav></details></div>
       </header>
 
-      <section class="intro">
+      <section id="research-home" class="research-screen research-home" aria-labelledby="research-home-title">
+        <div class="research-heading"><div><p class="eyebrow">K-STOCK RESEARCH</p><h1 id="research-home-title">근거를 확인하고,<br>시장의 반응을 살펴보세요.</h1><p>공식 근거를 확인하고, 공개 이후의 시장 반응을 살펴봅니다.</p></div><button id="research-home-refresh" class="candidate-button" type="button">새로고침</button></div>
+        <p><a class="candidate-button" href="#trade-recommendations">매수·매도 판단 확인하기 →</a></p>
+        <p id="research-home-message" role="status" aria-live="polite">연구 자료 확인 중</p>
+        <details class="research-detail first-use-guide" data-evidence-key="first-use-guide"><summary>처음 사용하기 · 지금 볼 수 있는 기능</summary><p>종목의 자료 상태와 공식 근거, 과거 시장 반응을 살펴볼 수 있습니다. 매수·매도 추천은 검증 전까지 보류합니다.</p><ol><li><a href="#investment-signals">종목 살펴보기</a><span>기업명이나 코드로 검색하고 ‘자료별 기준일·출처 보기’를 펼쳐 보세요.</span></li><li><a href="#global-influence">인물 발언 보기</a><span>공식 발언과 신고된 행동을 구분하고, 연결된 기업을 확인하세요.</span></li><li><a href="#agent-dashboard">에이전트 보고 보기</a><span>최근 완료 기록·부족 자료·다음 실행을 확인하세요. 단계 확인 수는 추천 종목 수가 아닙니다.</span></li></ol><p>현재 앱은 로컬 검증용입니다. Mac의 서버가 실행 중이어야 하며, Galaxy는 기존 USB 연결을 사용합니다.</p></details>
+        <p id="research-home-new-documents" class="research-note">오늘의 공식 원문 수 확인 중</p><div id="research-home-counts" class="research-summary"><div class="loading-skeleton">연구 현황을 불러오는 중입니다.</div></div>
+        <div class="home-workspace"><div class="home-results">
+        <div class="section-heading"><h2>최근 자료 기반 분석 후보</h2><a href="#investment-signals">후보 검증 현황</a></div><div id="research-home-recent" class="research-cards"></div>
+        <p class="research-note">검증된 예측 신호와 시장 반응 관측은 다릅니다. 현재 매수·매도 추천은 보류합니다.</p></div><aside class="home-operations" aria-label="자동 연구 상태"><p class="eyebrow">MAC MINI AGENT</p><div id="research-home-agent" class="research-agent-status"></div><a class="operations-link" href="#agent-dashboard">전체 검증 운영 보기 →</a></aside></div><div class="research-process" aria-label="연구 진행 방식"><h3>공식 근거에서 시장 반응까지</h3><ol><li><strong>공식 자료</strong><span>발언·공시 확인</span></li><li><strong>근거 검증</strong><span>주체·공개 시점 확인</span></li><li><strong>시장 반응</strong><span>같은 거래일로 비교</span></li><li><strong>연구 결과</strong><span>관측값·한계 공개</span></li></ol><p>연구 절차 안내입니다. 실제 실행 상태는 검증 운영에서 확인하세요.</p></div>
+      </section>
+      <section id="trade-recommendations" class="research-screen" aria-labelledby="trade-title"><div class="section-heading"><div><p class="eyebrow">PAPER DECISION · NO ORDERS</p><h2 id="trade-title">매수·매도 판단</h2></div><button id="trade-refresh" type="button" class="candidate-button">판단 새로고침</button></div><p>공식 자료와 검증 조건을 통과한 종목의 모의 판단입니다. 매도는 보유 종목 축소 검토이며 공매도 지시가 아닙니다.</p><p id="trade-message" role="status" aria-live="polite">판단 자료 확인 전</p><div id="trade-counts" class="research-summary"></div><label class="research-filter">판단 상태<select id="trade-filter"><option value="ALL">전체</option><option value="BUY">매수 검토</option><option value="SELL">매도 검토</option><option value="WATCH">관망</option><option value="INSUFFICIENT_DATA">판단 자료 부족</option></select></label><div id="trade-cards" class="research-cards"></div><details class="research-detail" data-evidence-key="trade:rule-examples"><summary>가상 조건으로 매수·매도 규칙 확인</summary><p>실제 종목 추천이 아닙니다. 가상 점수로 규칙의 분기만 확인합니다. 기준값의 예측 성능은 아직 입증되지 않았습니다.</p><div id="trade-examples"></div></details><p class="research-note">목표가·기대수익·승률은 검증 근거가 없어 표시하지 않습니다. 실제 주문은 차단되어 있습니다.</p></section>
+      <section id="investment-signals" class="research-screen" aria-labelledby="investment-signals-title"><div class="section-heading"><div><p class="eyebrow">OFFICIAL EVIDENCE</p><h2 id="investment-signals-title">투자 신호</h2></div><a href="#signal-research">근거·계산 상세</a></div><p>공식 발언과 행동을 연구합니다. 관측 수익률은 미래 수익 예측이 아닙니다.</p><label class="research-filter">연구 기간<select id="research-period"><option value="ALL">1·5·20거래일</option><option value="1">1거래일</option><option value="5">5거래일</option><option value="20">20거래일</option></select></label><div class="research-toolbar" aria-label="후보 검색과 자료 상태"><label>기업·인물 검색<input id="research-candidate-search" type="search" maxlength="100" placeholder="기업명, 종목코드, 신고 인물" autocomplete="off"></label><label>자료 상태<select id="research-readiness-filter"><option value="ALL">전체 후보</option><option value="TTM">매출 TTM 확인</option><option value="MISSING">매출 자료 부족</option></select></label><button id="research-filter-reset" type="button" class="candidate-button">필터 초기화</button></div><p id="research-filter-message" role="status" aria-live="polite"></p><h3>현재 분석 후보 · 최근 30일 공시</h3><p>자료 확인 상태를 보여줍니다. 매수·매도 추천 순위가 아닙니다.</p><div id="research-current-candidates" class="research-cards"></div><h3>과거 시장 반응 연구 사례</h3><div id="research-signal-cards" class="research-cards"></div><details data-evidence-key="static-disclosure-2" class="research-detail"><summary>아직 시장 반응을 확인하지 못한 신호</summary><div id="research-pending-signals"></div></details></section>
+      <section id="research-results" class="research-screen" aria-labelledby="research-results-title"><div class="section-heading"><div><p class="eyebrow">OBSERVATIONS, NOT PREDICTIONS</p><h2 id="research-results-title">과거 시장 반응 연구</h2></div><a href="#signal-research">전체 근거·계산 보기</a></div><div id="research-results-summary"></div><div id="research-selected-event" class="selected-research-panel" tabindex="-1" aria-label="선택한 연구의 상세 근거"></div><div id="research-results-cards" class="research-cards"></div><details data-evidence-key="static-disclosure-3" class="research-detail"><summary>연구 한계와 위험 검증</summary><div id="research-risk-summary"></div></details></section>
+      <section id="market-analysis" class="dashboard" aria-labelledby="dashboard-title">
+        <div class="dashboard-heading"><div><p class="eyebrow">YOUR DAILY RESEARCH</p><h1 id="dashboard-title">기준일을 확인하고<br>시장을 살펴보세요</h1><p class="intro-copy">재무, 기업가치, 위험을 함께 확인하세요. 데이터가 부족한 종목은 분석을 보류합니다.</p></div><button id="dashboard-refresh" class="candidate-button" type="button">분석 상태 새로고침</button></div>
+        <p id="dashboard-message" class="message" role="status" aria-live="polite">분석 상태를 새로고침해 저장된 결과를 확인하세요.</p>
+        <div class="dashboard-grid">
+          <article class="metric-card"><span>KOSPI</span><strong id="market-kospi">—</strong><p id="market-kospi-date">시장 지수 데이터 미연결</p></article>
+          <article class="metric-card"><span>KOSDAQ</span><strong id="market-kosdaq">—</strong><p id="market-kosdaq-date">시장 지수 데이터 미연결</p></article>
+          <article class="metric-card"><span>분석 기록</span><strong id="dashboard-count">—</strong><p id="dashboard-date">분석 기준일 확인 전</p></article>
+          <article class="metric-card"><span>후보·위험 검토</span><strong id="dashboard-approved">—</strong><p id="dashboard-risk">위험 검토 상태 확인 전</p></article>
+        </div>
+        <div class="data-status"><h2>데이터 상태</h2><p id="dashboard-sources">KIS · OpenDART: 연결 확인 전 / Scheduler: 실행 확인 전</p><p id="dashboard-collection">최근 정상 수집 시각: 확인 전</p></div>
+      </section>
+      <section id="global-influence" class="sources-section" aria-labelledby="influence-title">
+        <div class="section-heading"><div><p class="eyebrow">GLOBAL INFLUENCE · OFFICIAL EVIDENCE</p><h2 id="influence-title">영향력 인물 연구</h2></div><button id="influence-refresh" class="candidate-button" type="button">공식 근거 새로고침</button></div>
+        <p id="influence-message" class="message" role="status" aria-live="polite">공식 자료 확인 전</p>
+        <p>발언, 확인된 자본 행동, 해석을 각각 표시합니다. 보유량 변화는 특정 날짜의 매수·매도가 아닙니다.</p>
+        <p><a class="candidate-button" href="#signal-research">신호·시장 반응 보기</a></p>
+        <details data-evidence-key="static-disclosure-4" class="research-detail"><summary>기관 보유·정정 공시 근거</summary><div id="capital-collection-summary" class="validation-counts"></div><div id="capital-correction-evidence" class="company-evidence"></div></details><div id="influence-people" class="influence-people" aria-label="인물 목록"></div><div id="influence-detail" class="company-evidence"></div>
+      </section>
+      <section id="signal-research" class="sources-section" aria-labelledby="signal-title">
+        <div class="section-heading"><div><p class="eyebrow">SIGNAL RESEARCH · HOLD</p><h2 id="signal-title">발언·자본 행동 신호 연구</h2></div><a href="#global-influence">인물과 원천자료 확인</a></div>
+        <p>관측된 관계와 해석을 구분합니다. 상관관계는 인과관계의 증거가 아닙니다. 매수·매도 추천은 보류합니다.</p><div id="signal-type-summary" class="validation-counts"></div><label>신호 연구 유형<select id="signal-research-filter" aria-label="신호 연구 유형"><option value="ALL">전체 유형</option><option value="STATEMENT_ONLY">발언 단독</option><option value="CAPITAL_ONLY">자본 행동 단독</option><option value="STATEMENT_CAPITAL_ALIGNED">발언·행동 일치</option><option value="STATEMENT_CAPITAL_DIVERGENT">발언·행동 불일치</option><option value="INSUFFICIENT_EVIDENCE">근거 부족</option></select></label><p><a class="candidate-button" href="#signal-research-results">기간별 초과수익·그룹 비교 보기</a></p><div id="influence-signals" class="candidate-list"></div><div id="signal-research-results" class="company-evidence"></div><p id="influence-market" class="message" role="status">시장 반응 검증 대기 · 수익률을 추정하지 않습니다.</p>
+      </section>
+      <section id="agent-dashboard" class="sources-section agent-dashboard" aria-labelledby="agent-title">
+        <div class="section-heading"><div><p class="eyebrow">LOCAL VALIDATION WORKER</p><h2 id="agent-title">Mac mini 검증 운영</h2></div><button id="agent-refresh" class="candidate-button" type="button">검증 상태 새로고침</button></div>
+        <p id="agent-message" class="message" role="status" aria-live="polite">실행 상태 확인 전 · 실제 상태 API에 연결합니다.</p>
+        <div id="agent-counts" class="validation-counts"></div><p id="agent-timing" class="data-freshness">실행 일정 미확인</p>
+        <h3>데이터 수집 상태</h3><div id="agent-collection" aria-live="polite"></div>
+        <h3>자동 연구 단계</h3><div id="research-auto-stages"></div>
+        <h3>기업별 작업 큐</h3><div id="agent-queue"></div>
+        <div class="agent-panels"><section><h3>데이터 소스 상태</h3><div id="agent-sources"></div></section><section><h3>검증 로그</h3><div id="agent-logs"></div></section></div>
+        <p>실거래 OFF · 추천과 종목 성과는 필수 검증이 끝날 때까지 보류합니다.</p>
+      </section>
+      <section id="peer-validation" class="sources-section" aria-labelledby="peer-validation-title">
+        <div class="section-heading"><div><p class="eyebrow">PEER VALIDATION · EVIDENCE FIRST</p><h2 id="peer-validation-title">동종기업 비교</h2></div><a href="#agent-dashboard">작업 상태 확인</a></div>
+        <p id="peer-validation-message" class="message" role="status">검증 상태 확인 전</p><div id="peer-metrics" class="validation-counts"></div><div id="peer-evidence-shortcuts" class="peer-evidence-shortcuts" aria-label="기업별 상세 근거 바로 보기"></div><div id="peer-mobile-jobs" class="peer-mobile-jobs" aria-label="기업별 검증 요약"></div><div id="peer-validation-table"></div><div id="peer-company-evidence" class="company-evidence"></div>
+        <p>비교값 표시와 투자 추천 허용은 별도로 판단합니다. 날짜가 불명확한 시가총액·주식수는 결합하지 않습니다.</p>
+      </section>
+      <section id="disclosure-overview" class="intro">
         <div>
           <p class="eyebrow">PUBLIC FILINGS · U.S.</p>
           <h1>공시로 읽는<br><em>큰손의 포트폴리오</em></h1>
@@ -90,6 +152,36 @@
         <div id="message" class="message" role="status" aria-live="polite"></div>
       </section>
 
+      <section id="candidates" class="sources-section" aria-labelledby="candidates-title">
+        <div class="section-heading"><div><p class="eyebrow">CAPITAL BEHAVIOR · RESEARCH</p><h2 id="candidates-title">분석 후보</h2></div><button id="candidate-load" class="candidate-button" type="button">후보 불러오기</button></div>
+        <p>공개 근거를 바탕으로 살펴볼 연구 후보입니다. 점수는 수익률이나 매수 권유를 의미하지 않습니다.</p>
+        <p class="privacy-hint">인증이 필요한 서버에서는 위의 외부접속 토큰 입력란을 사용하세요.</p>
+        <div class="filter-row"><label>종목 검색<input id="candidate-search" type="search" placeholder="종목명 또는 코드"></label><label>업종 코드<input id="candidate-industry" type="search" placeholder="제공된 업종 코드"></label><label>분석 기준일<input id="candidate-analysis-date" type="date"></label><label>데이터 품질<select id="candidate-quality"><option value="all">전체</option><option value="ready">조건 통과</option><option value="incomplete">검토 필요</option></select></label><label>정렬<select id="candidate-sort"><option value="name">종목명</option><option value="risk">위험 수준</option><option value="date">가격 기준일</option></select></label></div>
+        <p id="candidate-message" class="message" role="status" aria-live="polite">아직 후보를 조회하지 않았습니다.</p>
+        <p id="candidate-date" class="privacy-hint"></p>
+        <div class="candidate-markets">
+          <section aria-labelledby="kr-title"><h3 id="kr-title">한국 · 최대 15개</h3><div id="candidate-kr" class="candidate-list"></div></section>
+          <section aria-labelledby="global-title"><h3 id="global-title">글로벌 · 최대 20개</h3><div id="candidate-global" class="candidate-list"></div></section>
+        </div>
+        <section aria-labelledby="candidate-review-title"><h3 id="candidate-review-title">정정 공시 검토 필요</h3><div id="candidate-review" class="candidate-list"></div></section>
+        <section aria-labelledby="candidate-incomplete-title"><h3 id="candidate-incomplete-title">분석 데이터 확인 필요</h3><div id="candidate-incomplete" class="candidate-list"></div></section>
+
+      </section>
+
+      <section id="stock-analysis" class="sources-section" aria-labelledby="analysis-title"><p class="eyebrow">STOCK WORKSPACE</p><h2 id="analysis-title">종목 상세 분석</h2><a class="candidate-button" href="#candidates">종목 목록에서 근거 보기</a><p>후보 목록에서 ‘근거와 위험 보기’를 선택하면 재무·기업가치·공시 근거를 함께 확인할 수 있습니다.</p><div class="stock-refresh-bar"><p id="candidate-detail-message" class="message" role="status" aria-live="polite">종목을 선택하면 최신 상태를 확인할 수 있습니다.</p><button id="candidate-detail-refresh" class="candidate-button" type="button" disabled>상세 다시 확인</button></div><div id="price-chart" class="chart-empty"><h3>가격 차트</h3><p>검증된 가격 이력이 연결되면 표시됩니다. 실제 데이터가 없는 기간은 선택할 수 없습니다.</p><div id="price-periods" class="period-controls" aria-label="차트 기간"><button disabled>1개월</button><button disabled>3개월</button><button disabled>6개월</button><button disabled>1년</button><button disabled>3년</button></div></div>
+        <section id="candidate-detail" class="candidate-detail" aria-labelledby="candidate-detail-title" hidden></section>
+      </section>
+      <section id="paper-portfolio" class="sources-section" aria-labelledby="paper-title"><p class="eyebrow">PAPER ONLY</p><h2 id="paper-title">모의 포트폴리오</h2><span class="badge">모의투자 · 실제 주문 없음</span><div class="dashboard-grid"><article class="metric-card"><span>모의 평가액·손익</span><strong>통화별 계산</strong><p>가상 기록을 추가하면 아래에 표시됩니다.</p></article><article class="metric-card"><span>누적 손익·수익률</span><strong>조건부 계산</strong><p>아래에서 비용·입출금을 반영해 계산합니다.</p></article></div><p>입력한 가상 매수가·수량·매수 비용과 저장된 검증 가격으로 참고 손익을 계산합니다. 수수료·세금은 해당 기록의 총액을 종목과 같은 통화로 입력하세요. 매도 비용과 배당은 반영하지 않습니다. 이 탭의 메모리에만 유지되며 새로고침하면 사라집니다. 기록이 있으면 페이지를 나갈 때 경고를 요청합니다. 브라우저·앱 종료 방식에 따라 경고가 나오지 않을 수 있으니 먼저 아래에서 백업을 직접 저장하세요. 자동 저장하지 않으며 백업을 만들어도 나가기 경고는 유지됩니다.</p><div class="filter-row"><label>종목<select id="paper-stock"><option value="">먼저 분석 상태를 새로고침하세요</option></select></label><label>가상 매수가<input id="paper-buy" type="number" min="0" step="any" inputmode="decimal"></label><label>가상 수량<input id="paper-quantity" type="number" min="0" step="any" inputmode="decimal"></label><label>가상 매수 수수료 총액<input id="paper-fee" type="number" min="0" step="any" inputmode="decimal" value="0"></label><label>가상 매수 세금 총액<input id="paper-tax" type="number" min="0" step="any" inputmode="decimal" value="0"></label></div><button id="paper-add" class="candidate-button" type="button">모의 기록 추가</button><button id="paper-clear" class="candidate-button" type="button" disabled>모의 기록 모두 비우기</button><p id="paper-message" class="message" role="status" aria-live="polite">검증된 기준가격이 없으면 계산하지 않습니다.</p><div class="filter-row"><label>표시할 기록 종류<select id="paper-record-kind"><option value="all">전체 기록</option><option value="position">매수</option><option value="sale">매도</option><option value="flow">입출금</option><option value="dividend">가정 배당</option></select></label><label>기록 표시 순서<select id="paper-record-order"><option value="registered">등록 순서</option><option value="newest">날짜 최신순</option><option value="oldest">날짜 과거순</option></select></label><label>기록 조회 시작일<input id="paper-record-from" type="date" aria-describedby="paper-record-date-message"></label><label>기록 조회 종료일<input id="paper-record-to" type="date" aria-describedby="paper-record-date-message"></label><label>기록에서 종목 코드 찾기<input id="paper-record-search" type="search" maxlength="20" placeholder="예: 005930, AAPL"></label></div><p id="paper-record-date-message" role="status" aria-live="polite">조회 기간은 양 끝 날짜를 포함합니다. 계산 기간과 별개입니다.</p><button id="paper-record-reset" type="button" class="candidate-button">기록 표시 조건 초기화</button><div id="paper-record-summary" class="candidate-card" aria-live="polite"></div><p id="paper-record-count" role="status" aria-live="polite">전체 0건 중 0건 표시</p><p>각 종류의 기록은 페이지당 최대 20건씩 표시합니다. 날짜 정렬은 입출금·매도·가정 배당에 적용하며, 같은 날짜는 등록 순서를 유지합니다. 매수는 별도 거래일이 없으므로 등록 순서를 유지하며, 조회 날짜를 지정하면 숨깁니다. 화면 정렬은 계산·백업의 순서를 바꾸지 않습니다. 이전·다음 기록으로 이동하세요. 종목 코드 검색 중에는 종목이 없는 입출금 기록이 숨겨집니다. 입력 점검의 문제 위치로 이동하면 표시 조건을 초기화합니다.</p><button id="paper-delete-undo" class="candidate-button" type="button" disabled>마지막 개별 삭제 되돌리기</button><p id="paper-delete-message" class="message" role="status" aria-live="polite">개별 삭제 직후 한 번만 되돌릴 수 있습니다. 다른 기록·입력 변경 또는 모두 비우기는 되돌리기 사본도 지웁니다.</p><section id="paper-edit-panel" hidden aria-labelledby="paper-edit-title"><h3 id="paper-edit-title">가상 기록 수정</h3><p id="paper-edit-message" role="status" aria-live="polite"></p><div id="paper-edit-fields" class="filter-row"></div><button id="paper-edit-save" type="button" class="candidate-button">수정 저장</button><button id="paper-edit-cancel" type="button" class="candidate-button">수정 취소</button><p>저장 전 수정 내용은 계산·백업에 포함되지 않습니다. 변경 중에는 누적 성과 계산·JSON 백업·CSV 보고서 생성을 진행하지 않으므로 먼저 저장하거나 취소하세요. 다른 기록을 수정하려면 변경한 내용을 먼저 저장하거나 수정 취소를 누르세요. 다른 기록이나 계산 입력을 변경하면 수정 중인 내용은 닫힙니다.</p></section><div id="paper-results" class="candidate-list"></div><details class="research-detail"><summary>모의 기록 백업·불러오기</summary><p>사용자가 입력한 가상 기록만 보관합니다. 시세·추천·검증 상태·인증 토큰은 포함하지 않습니다. 파일과 아래 텍스트는 암호화되지 않으며, 직접 저장한 백업은 파일 앱이나 다운로드 폴더에서 삭제해야 합니다. 기기·클라우드 백업 설정에 따라 복사본이 남을 수 있습니다.</p><button id="paper-backup-export" class="candidate-button" type="button">백업 텍스트 만들기</button><button id="paper-backup-download" class="candidate-button" type="button">JSON 파일 다운로드</button><label for="paper-backup-text">백업 텍스트 (복사·붙여넣기)</label><textarea id="paper-backup-text" rows="7" maxlength="262144" spellcheck="false"></textarea><label for="paper-backup-file">JSON 파일 선택 (지원 브라우저)</label><input id="paper-backup-file" type="file" accept=".json,application/json"><p>앱에서 파일 저장·선택이 지원되지 않으면 백업 텍스트를 복사·붙여넣으세요. 불러오기는 서버로 파일을 업로드하지 않으며, 계산을 누를 때 기존 API로 가상 기록을 전송합니다.</p><button id="paper-backup-preview" class="candidate-button" type="button">내용 확인</button><p id="paper-backup-message" class="message" role="status" aria-live="polite">내용을 확인한 뒤 교체해야 현재 기록에 반영됩니다. 불러온 시세는 사용하지 않습니다.</p><div id="paper-backup-comparison" class="candidate-card" aria-live="polite"></div><button id="paper-backup-cancel" type="button" class="candidate-button" disabled>불러오기 미리보기 취소</button><button id="paper-backup-apply" class="candidate-button" type="button" disabled>확인한 백업으로 현재 기록 교체</button></details><h3>모의 누적 성과 검증</h3><p>입력한 가상 기록으로 계산합니다. 원주가·기업행동 검증과 같은 기간의 지수가 필요합니다. 가상 매수는 시작 거래일에 이루어진 것으로 계산하며 입력한 매수 비용을 반영합니다. 입출금은 선택한 거래일의 장 시작 전에 반영합니다. 매도 기록과 비용도 누적 성과에 반영합니다. 배당은 아래의 사용자 가상 시나리오로만 추가할 수 있습니다.</p><div class="filter-row"><label>가상 시작 거래일<input id="paper-from" type="date"></label><label>종료 거래일<input id="paper-to" type="date"></label></div><div class="filter-row"><label>가상 시작 현금 (KRW)<input id="paper-initial-cash" type="number" min="0" step="any" inputmode="decimal" placeholder="비우면 매수액과 비용 합계"></label></div><p>입출금은 KRW 누적 성과에만 반영됩니다. 위 종목별 참고 손익과는 별도입니다. 입금은 수익에서 제외하고, 보유 주식을 자동 매도해 출금하지 않습니다.</p><div class="filter-row"><label>가상 입출금 날짜<input id="paper-flow-date" type="date"></label><label>유형<select id="paper-flow-direction"><option value="DEPOSIT">입금</option><option value="WITHDRAWAL">출금</option></select></label><label>가상 금액 (KRW)<input id="paper-flow-amount" type="number" min="0" step="any" inputmode="decimal"></label></div><button id="paper-flow-add" class="candidate-button" type="button">가상 입출금 추가</button><p id="paper-flow-message" class="message" role="status" aria-live="polite">이 탭의 모의 기록이며 새로고침하면 사라집니다. 누적 성과 계산 시 기존 API로 전송하며 저장하지 않습니다.</p><div id="paper-flow-results" class="candidate-list"></div><h3>가상 매도 기록 (KRW)</h3><p>시작일 매수 기록의 수량 안에서 매도를 기록합니다. 누적 성과에만 반영하며 위 종목별 참고 손익은 매수 기록 기준입니다. 비용 포함 평균 매수원가로 실현 손익을 계산합니다. 같은 날은 매수 후 매도, 매도끼리는 등록 순서이며 입출금은 매매보다 먼저 반영합니다. 가상 배당은 매매 뒤에 반영합니다.</p><div class="filter-row"><label>매도 종목<select id="paper-sale-stock"><option value="">매수 기록의 한국 종목 선택</option></select></label><label>가상 매도일<input id="paper-sale-date" type="date"></label><label>가상 매도가<input id="paper-sale-price" type="number" min="0" step="any" inputmode="decimal"></label><label>가상 매도 수량<input id="paper-sale-quantity" type="number" min="0" step="any" inputmode="decimal"></label><label>매도 수수료 총액<input id="paper-sale-fee" type="number" min="0" step="any" value="0" inputmode="decimal"></label><label>매도 세금 총액<input id="paper-sale-tax" type="number" min="0" step="any" value="0" inputmode="decimal"></label></div><button id="paper-sale-add" class="candidate-button" type="button">가상 매도 추가</button><p id="paper-sale-message" class="message" role="status" aria-live="polite">실제 주문 없이 이 탭에서만 관리하며 계산 요청 시 API에 전송합니다.</p><div id="paper-sale-results" class="candidate-list"></div><h3>가상 배당 시나리오 (KRW)</h3><p>공식 배당 자료가 아닌 사용자 가정입니다. 세후 순수령 총액을 입력하면 해당 거래일의 매매 뒤에 현금으로 반영합니다. 세율·주당 배당·권리일·수령 자격은 자동 계산하지 않습니다. 전량 매도 후 지급을 가정할 수도 있으며 실제 권리를 확인한 뜻은 아닙니다. 장 시작 전 출금이나 같은 날 매수에는 사용할 수 없습니다. 비거래일은 임의로 옮기지 않습니다.</p><div class="filter-row"><label>배당 가정 종목<select id="paper-dividend-stock"><option value="">매수 기록의 한국 종목 선택</option></select></label><label>가상 수령일<input id="paper-dividend-date" type="date"></label><label>가상 순수령 총액 (KRW)<input id="paper-dividend-amount" type="number" min="0" step="any" inputmode="decimal"></label></div><button id="paper-dividend-add" class="candidate-button" type="button">가상 배당 추가</button><p id="paper-dividend-message" class="message" role="status" aria-live="polite">이 탭에서만 관리하며 계산 시 API에 전송합니다. 가상 배당 포함 결과는 공식 총수익률·지수 초과수익으로 표시하지 않습니다.</p><div id="paper-dividend-results" class="candidate-list"></div><button id="paper-input-check" class="candidate-button" type="button">현재 입력 점검</button><section id="paper-input-review" tabindex="-1" aria-labelledby="paper-input-review-title"><h3 id="paper-input-review-title">계산 전 입력 점검</h3><div id="paper-input-review-results" role="status" aria-live="polite"><p>날짜·금액·보유 수량·가상 현금을 점검합니다. 거래일·원주가·기업행동·실제 배당 권리는 서버 근거 검증과 별도입니다.</p></div></section><button id="paper-performance-load" class="candidate-button" type="button">모의 누적 성과 계산</button><p id="paper-performance-message" class="message" role="status" aria-live="polite">검증된 시계열이 없으면 PENDING을 유지합니다.</p><div id="paper-performance-results"></div><details class="research-detail"><summary>모의 성과 CSV 보고서</summary><p>마지막으로 계산·대사된 전체 기간의 결과를 내보냅니다. 차트 구간과 보유 상태 필터는 보고서 범위를 바꾸지 않습니다. 공식 투자 성과나 실제 배당 권리 증빙이 아닙니다. 원본 수치 정밀도를 유지하며 화면 반올림 값과 다를 수 있습니다. 보고서는 기록 복원용 JSON 백업과 구분됩니다.</p><div class="filter-row"><label>보고서 종류<select id="paper-report-kind"><option value="daily">일별 잔액·손익</option><option value="positions">종목별 손익·기여도</option></select></label></div><button id="paper-report-build" class="candidate-button" type="button" disabled>CSV 보고서 만들기</button><button id="paper-report-download" class="candidate-button" type="button" disabled>CSV 파일 다운로드</button><label for="paper-report-text">CSV 보고서 텍스트 (복사 가능)</label><textarea id="paper-report-text" rows="8" readonly spellcheck="false"></textarea><p id="paper-report-message" class="message" role="status" aria-live="polite">먼저 모의 누적 성과를 계산하세요. 기록 변경 시 이전 보고서는 비웁니다.</p><p>파일 저장을 지원하지 않는 앱에서는 텍스트를 복사하세요. 내보낸 파일은 암호화되지 않으며 파일 앱·다운로드 폴더에서 직접 삭제해야 합니다. 이미 저장한 파일과 기기·클라우드 복사본은 이후 기록 변경으로 자동 갱신·삭제되지 않습니다. 보고서 생성은 서버 업로드나 추가 조회를 하지 않습니다.</p></details><p>실제 체결 성과가 아닙니다. 비용은 사용자가 입력한 가상 금액이며 실제 세율을 자동 계산하지 않습니다. KOSPI/KOSDAQ 가격지수는 성과 기록에서 확인할 수 있습니다. 모의 누적 성과와 초과수익률은 기업행동 검증 전 보류합니다.</p></section>
+      <section id="performance" class="sources-section" aria-labelledby="performance-title">
+        <div class="section-heading"><div><p class="eyebrow">CANDIDATE HISTORY</p><h2 id="performance-title">성과 기록</h2></div><button id="performance-load" class="candidate-button" type="button">성과 보고서 불러오기</button></div>
+        <p>당시 승인된 한국 후보의 다음 거래일 종가를 기준으로 계산한 참고 성과입니다. 실제 체결 수익률과 다릅니다.</p>
+        <p class="privacy-hint">인증이 필요한 서버에서는 위의 외부접속 토큰 입력란을 사용하세요.</p>
+        <p id="performance-message" class="message" role="status" aria-live="polite">아직 성과 보고서를 조회하지 않았습니다.</p>
+        <div class="section-heading"><h3>일일 분석 보고서</h3><button id="daily-report-load" class="candidate-button" type="button">일일 보고서 조회</button></div><p id="daily-report-message" class="message" role="status" aria-live="polite">아직 일일 보고서를 조회하지 않았습니다.</p><div id="daily-report-list" class="candidate-list"></div>
+        <div class="section-heading"><h3>KOSPI · KOSDAQ 가격지수</h3><button id="benchmark-load" class="candidate-button" type="button">시장 지수 조회</button></div><p id="benchmark-message" class="message" role="status" aria-live="polite">가격지수는 배당 포함 총수익지수가 아닙니다.</p><div id="benchmark-results"></div><div id="performance-list" class="candidate-list"></div>
+        <section id="performance-detail" class="candidate-detail" aria-labelledby="performance-detail-title" hidden></section>
+      </section>
+
       <section id="sources" class="sources-section">
         <div class="section-heading compact-heading"><div><p class="eyebrow">DISCLOSURE SOURCES</p><h2>인물별 공개 경로</h2></div></div>
         <div class="source-grid">
@@ -100,8 +192,10 @@
         </div>
       </section>
 
+      <section id="settings" class="sources-section" aria-labelledby="settings-title"><p class="eyebrow">WORKSPACE SETTINGS</p><h2 id="settings-title">설정</h2><label>화면 모드<select id="theme-select"><option value="system">시스템 설정</option><option value="light" selected>라이트 모드</option><option value="dark">다크 모드</option></select></label><p>서버: 현재 접속한 주소 · Android에서는 앱의 연결 설정을 사용하세요.</p><p>인증: <a href="#holdings">외부접속 토큰 입력</a> · 토큰은 메모리에서만 사용합니다.</p><p><a href="/privacy.html" target="_blank" rel="noopener">개인정보·이용 안내 (출시 전 검토본)</a></p><p id="settings-version">앱 버전: 확인 전</p><p>실거래 OFF · 실제 주문 기능 없음</p><a href="#sources">공식 데이터 출처 확인</a></section>
       <footer class="footer"><span>K-STOCK AI</span><span>공개 신고 자료 참고용 · 투자 권유가 아닙니다</span></footer>
     </main>
   </div>
+  <nav class="bottom-nav" aria-label="모바일 주요 메뉴"><a href="#overview">홈</a><a href="#investment-signals">신호</a><a href="#global-influence">인물</a><a href="#market-analysis">시장</a><a href="#research-results">연구</a></nav>
 </body>
 </html>

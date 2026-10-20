@@ -2,7 +2,8 @@ import { agentResult } from '../contracts.js';
 const clamp=x=>Math.max(0,Math.min(100,Number(x)||0));
 export function runRiskAgent(ticker, risk = {}) {
   const severity = Math.max(clamp(risk.financial),clamp(risk.regulatory),clamp(risk.governance),clamp(risk.valuation),clamp(risk.dataStaleness));
-  return agentResult('risk', ticker, { severity, riskPenalty: Math.round(severity * 0.15) });
+  const missing=['financial','regulatory','governance','valuation','dataStaleness'].filter(k=>typeof risk[k]!=='number'||!Number.isFinite(risk[k])||risk[k]<0||risk[k]>100);
+  return agentResult('risk', ticker, { available:missing.length===0,scope:'NUMERIC_SCREEN_ONLY',missing,severity:missing.length?null:severity, riskPenalty:missing.length?null:Math.round(severity * 0.15) });
 }
 export function runBearAgent(ticker, input = {}) {
   const reasons = [];

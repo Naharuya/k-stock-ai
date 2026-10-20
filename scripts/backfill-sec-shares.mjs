@@ -1,0 +1,10 @@
+import {readFile} from 'node:fs/promises';
+import {backfillSecCoverShares} from '../src/v2/sec_share_backfill.js';
+import {currentCompany} from '../src/v2/current_universe.js';
+import {assertSafeKStockV2Environment} from '../src/v2/scoring.js';
+import {readCurrent,saveCurrent,lockedCurrent} from '../src/v2/current_collection_io.js';
+assertSafeKStockV2Environment();
+const ticker=currentCompany(process.argv[2]).ticker,map=JSON.parse(await readFile(process.argv[3],'utf8'));
+const file='data/v2/influence/sec-scope-reviews.json';let updated=0;
+await lockedCurrent(file,async()=>{const state=await readCurrent(file);for(const review of state.reviews||[]){if(review.companyId!==ticker||!map[review.documentId]||(Array.isArray(review.shareRecords)&&Array.isArray(review.riskNotes)&&Array.isArray(review.capitalShareRecords)&&Array.isArray(review.capitalFlows)))continue;const raw=await readFile(map[review.documentId],'utf8');Object.assign(review,backfillSecCoverShares(review,raw,ticker,new Date().toISOString()));updated++;}if(updated){state.checkedAt=new Date().toISOString();await saveCurrent(file,state);}});
+console.log(JSON.stringify({ticker,updated,externalRequests:0,mode:'HASH_MATCHED_SAVED_RAW_BACKFILL'}));

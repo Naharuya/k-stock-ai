@@ -1,0 +1,21 @@
+import test from'node:test';import assert from'node:assert/strict';import{reconcileTreasuryBalance}from'../src/v2/treasury_ledger.js';
+const now='2026-10-12T00:00:00Z',proof={stockCode:'005930',shareClass:'COMMON',sourceVerified:true,sourceDocumentId:'fixture',sourceUrl:'https://example.org/fixture',availableAt:now};
+const opening={...proof,quantity:100,asOfDate:'2026-06-30'},closing={...proof,quantity:110,asOfDate:'2026-08-21'};
+const event=(eventType,quantity,extra={})=>({...proof,eventType,quantity,effectiveDate:'2026-07-08',verificationStatus:'VERIFIED',...extra});
+const run=(events,c=closing,extra={})=>reconcileTreasuryBalance(opening,events,c,{analysisDate:now,...extra});
+test('closing balance matches opening plus actual acquisition minus disposal and cancellation',()=>{const r=run([event('TREASURY_ACQUIRE',30),event('TREASURY_DISPOSE',10),event('TREASURY_CANCEL',10)],closing,{coverageVerified:true});assert.equal(r.status,'VERIFIED');assert.equal(r.difference,0);});
+test('arithmetic agreement does not prove full interval coverage',()=>{const r=run([event('TREASURY_ACQUIRE',10)]);assert.equal(r.equationStatus,'MATCH');assert.equal(r.status,'PENDING_VERIFICATION');});
+test('mismatch reports exact difference without silently replacing reported closing',()=>{const r=run([event('TREASURY_ACQUIRE',12)]);assert.equal(r.status,'RECONCILIATION_MISMATCH');assert.equal(r.difference,2);assert.equal(r.closingBalance,110);});
+test('missing opening or closing cannot create a final balance',()=>{assert.equal(run([],null).calculatedBalance,null);assert.equal(reconcileTreasuryBalance(null,[],closing,{analysisDate:now}).reason,'OPENING_BALANCE_UNVERIFIED');});
+test('planned amounts excluded and duplicate economic executions blocked',()=>{assert.equal(run([event('TREASURY_ACQUIRE',10),event('TREASURY_ACQUIRE',999,{executionStatus:'PLANNED'})]).difference,0);assert.equal(run([event('TREASURY_ACQUIRE',5),event('TREASURY_ACQUIRE',5)]).reason,'DUPLICATE_EXECUTION');});
+test('preferred shares and unresolved corrections cannot affect common balances',()=>{for(const extra of [{shareClass:'PREFERRED'},{correctionStatus:'UNRESOLVED'},{availableAt:'2026-10-13T00:00:00Z'}])assert.equal(run([event('TREASURY_ACQUIRE',10,extra)]).status,'PENDING_VERIFICATION');});
+test('other reclassifications require explicit source verified signed adjustment',()=>{assert.equal(run([event('TREASURY_OTHER',null,{delta:10})]).reason,'TREASURY_EFFECT_UNVERIFIED');assert.equal(run([event('TREASURY_OTHER',null,{delta:10,adjustmentVerified:true})]).difference,0);});
+
+test('future balance reference date is blocked even with an earlier supplied publication',()=>assert.equal(run([],{...closing,asOfDate:'2026-10-13'}).reason,'CLOSING_BALANCE_UNVERIFIED'));
+
+import{reconcileDatedTreasuryBalance}from'../src/v2/treasury_ledger.js';
+const dated=(c,events=[],extra={})=>reconcileDatedTreasuryBalance(opening,events,c,{asOfDate:'2026-10-08',analysisDate:now,...extra});
+test('October 8 publication cannot substitute an August balance reference date',()=>{const r=dated({...closing,availableAt:'2026-10-08T12:00:00Z'});assert.equal(r.reconciliationStatus,'INSUFFICIENT_DATA');assert.equal(r.reason,'TARGET_DATE_BALANCE_UNVERIFIED');assert.equal(r.calculatedBalance,null);});
+test('missing October balance cannot extrapolate actual acquisitions into official holdings',()=>assert.equal(dated(null,[event('TREASURY_ACQUIRE',56856305)]).closingBalance,null));
+test('unresolved closing or execution correction has a distinct pending correction state',()=>{for(const [c,es] of [[{...closing,asOfDate:'2026-10-08',correctionStatus:'UNRESOLVED'},[]],[{...closing,asOfDate:'2026-10-08'},[event('TREASURY_ACQUIRE',10,{correctionStatus:'UNRESOLVED'})]]])assert.equal(dated(c,es).reconciliationStatus,'PENDING_CORRECTION');});
+test('dated reconciliation preserves coverage gate and exact mismatch',()=>{const c={...closing,asOfDate:'2026-10-08'};assert.equal(dated(c,[event('TREASURY_ACQUIRE',10)]).reconciliationStatus,'INSUFFICIENT_DATA');assert.equal(dated(c,[event('TREASURY_ACQUIRE',10)],{coverageVerified:true}).reconciliationStatus,'RECONCILED');assert.equal(dated(c,[event('TREASURY_ACQUIRE',12)]).reconciliationStatus,'MISMATCH');});

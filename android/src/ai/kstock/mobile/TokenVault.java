@@ -31,6 +31,10 @@ public final class TokenVault implements ApiClient.Tokens {
   String value=Base64.encodeToString(cipher.getIV(),Base64.NO_WRAP)+":"+Base64.encodeToString(cipher.doFinal(token.getBytes(StandardCharsets.UTF_8)),Base64.NO_WRAP);
   if(!prefs.edit().putString(origin,value).commit())throw new Exception("TOKEN_SAVE_FAILED");
  }
+ /** Delete only this origin's ciphertext; preserve other servers and the shared key. */
+ public synchronized void forget(String origin) throws Exception {
+  if(!prefs.edit().remove(origin).commit())throw new Exception("TOKEN_DELETE_FAILED");
+ }
  public synchronized String read(String origin) throws Exception {
   String value=prefs.getString(origin,"");if(value.isEmpty())return "";
   String[] parts=value.split(":",-1);if(parts.length!=2)throw new Exception("TOKEN_READ_FAILED");

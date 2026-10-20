@@ -1,3 +1,12 @@
+import {registerBackendResearchProgress} from './v2/backend_research_progress.js';
+import {createOvernightResearch} from './v2/overnight_research.js';
+import {createOfficialResearchCollection} from './v2/official_research_collection.js';
+import {createAutomaticStatementAnalysis} from './v2/automatic_statement_analysis.js';
+import {createStockPerformanceService,registerStockPerformanceRoutes} from './v2/stock_performance.js';
+import {createPaperPerformanceService,registerPaperPerformanceRoutes} from './v2/paper_performance_service.js';
+import {createBenchmarkService,registerBenchmarkRoutes} from './v2/benchmark_data.js';
+import { createPerformanceReportService, registerPerformanceRoutes } from './v2/performance_report.js';
+import { createKrRefresh } from './v2/kr_collect.js';
 import "dotenv/config";
 import crypto from "node:crypto";
 import path from "node:path";
@@ -12,6 +21,17 @@ import { createSafeDataPipeline } from "./services/safe_data_pipeline.js";
 import { createAnalysisDataLoader } from "./services/analysis_data_loader.js";
 import { getWatchlistReport, listRecentWatchlistReports } from "./services/watchlist_reports.js";
 import { validateWatchlist } from "./services/watchlist_runner.js";
+import { createCandidateService, registerCandidateRoutes } from "./v2/candidate_service.js";
+import { createOwnershipRefresh } from "./v2/ownership_refresh.js";
+import { createSec13fRefresh } from "./v2/sec_13f_refresh.js";
+import { createForm4Refresh } from "./v2/sec_form4_refresh.js";
+import { createCandidateReportService } from "./v2/candidate_report.js";
+import { createFinancialRefresh } from "./v2/sec_financials.js";
+import { createUsPriceRefresh } from "./v2/us_prices.js";
+import { readPeerValidationStatus, startPeerValidationScheduler } from './v2/peer_validation_worker.js';
+import { readDataCollectionStatus, runDataCollectionWorker } from './v2/data_collection_worker.js';
+import {createResearchAutomation,registerResearchDashboardRoutes,savedResearchInputRevision} from './v2/research_automation.js';
+import {createInfluenceResearchService,registerInfluenceResearchRoutes} from './v2/influence_service.js';
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -65,12 +85,71 @@ app.get("/health", (_req, res) => {
     version: "0.1.0",
     mode: process.env.KSTOCK_AI_MODE || "mock",
     externalAccess: externalEnabled,
+    dataSources: { kis: process.env.KIS_APP_KEY && process.env.KIS_APP_SECRET ? 'CONFIGURED_NOT_VERIFIED' : 'NOT_CONFIGURED', opendart: process.env.OPENDART_API_KEY ? 'CONFIGURED_NOT_VERIFIED' : 'NOT_CONFIGURED', scheduler: 'NOT_VERIFIED' },
     brokerEnabled: false,
     liveTrading: false,
   });
 });
 
 app.use("/api", requireExternalAuth);
+registerBackendResearchProgress(app,path.join(projectDirectory,"data/v2/research-progress.json"));
+const refreshOwnership = createOwnershipRefresh();
+const refreshSec = createSec13fRefresh();
+const refreshForm4 = createForm4Refresh();
+const refreshFinancial = createFinancialRefresh();
+const refreshKr = createKrRefresh();
+const refreshPrices = createUsPriceRefresh();
+const candidateService = process.env.KSTOCK_V2_READ_BATCH_REPORT === 'true' ? createCandidateReportService({
+  reportPath: path.resolve(process.env.KSTOCK_V2_OUTPUT_PATH || path.join(projectDirectory, 'data/v2/latest.json')),
+}) : createCandidateService({
+  requireVerifiedRecommendations:true,
+  refresh: async input => refreshPrices(await refreshFinancial(await refreshForm4(await refreshSec(await refreshOwnership(await refreshKr(input)))))),
+  inputPath: path.resolve(process.env.KSTOCK_V2_INPUT_PATH || path.join(projectDirectory, "data", "v2-input.json")),
+});
+registerCandidateRoutes(app, candidateService);
+const peerStatePath = path.join(projectDirectory, 'data/v2/peer-validation/state.json');
+const collectionStatePath = path.join(projectDirectory, 'data/v2/data-collection/state.json');
+const influenceService=createInfluenceResearchService({sourcesPath:path.join(projectDirectory,'data/v2/influence/sources.json'),bridgePath:path.join(projectDirectory,'data/v2/verification/peer-share-bridge-review.json'),reportPath:path.resolve(process.env.KSTOCK_V2_OUTPUT_PATH||path.join(projectDirectory,'data/v2/reports/latest.json'))});
+registerInfluenceResearchRoutes(app,influenceService);
+let researchPolicy;try{researchPolicy=JSON.parse(await readFile(path.join(projectDirectory,'data/v2/data-collection/research-policy.json'),'utf8'));}catch{}
+const collectionEnabled=process.env.KSTOCK_RESEARCH_COLLECTION_ENABLED==='true'||(process.env.KSTOCK_RESEARCH_COLLECTION_ENABLED===undefined&&researchPolicy?.schemaVersion===1&&researchPolicy.enabled===true&&researchPolicy.scopeId==='approved-official-read-only-v1'&&researchPolicy.liveTradingEnabled===false);
+const officialCollection=createOfficialResearchCollection({directory:path.join(projectDirectory,'data/v2'),env:{...process.env,KSTOCK_RESEARCH_COLLECTION_ENABLED:String(collectionEnabled)},onAnalysis:createAutomaticStatementAnalysis({directory:path.join(projectDirectory,'data/v2/influence')})});
+const researchAutomation=createResearchAutomation({loadResearch:()=>influenceService.load(),statePath:path.join(projectDirectory,'data/v2/research-automation/state.json'),collectionPath:collectionStatePath,inputRevision:()=>savedResearchInputRevision(path.join(projectDirectory,'data/v2/influence'))});
+const overnightResearch=createOvernightResearch({file:path.join(projectDirectory,'data/v2/research-automation/overnight.json'),loadResearch:()=>influenceService.load(),loadCollection:()=>officialCollection.status(),enabled:process.env.KSTOCK_PEER_WORKER_ENABLED==='true'});
+registerResearchDashboardRoutes(app,{loadResearch:()=>influenceService.load(),automation:researchAutomation,loadOvernight:()=>overnightResearch.status(),loadCollection:()=>officialCollection.status(),loadScheduler:()=>readPeerValidationStatus({statePath:peerStatePath})});
+app.get('/api/v2/data-collection/status', async (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try { res.json({ success: true, ...await readDataCollectionStatus({ statePath: collectionStatePath }) }); }
+  catch { res.status(503).json({ success: false, status: 'UNAVAILABLE', error: 'COLLECTION_STATUS_UNAVAILABLE' }); }
+});
+app.get('/api/v2/peer-validation/status', async (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try {
+    const [validation, collection] = await Promise.all([
+      readPeerValidationStatus({ statePath: peerStatePath }),
+      readDataCollectionStatus({ statePath: collectionStatePath }),
+    ]);
+    res.json({ success: true, ...validation, collection });
+  }
+  catch { res.status(503).json({ success: false, status: 'UNAVAILABLE', error: 'PEER_VALIDATION_UNAVAILABLE' }); }
+});
+// Local saved-evidence processing only: credentials and collection switches are unchanged.
+const peerScheduler = process.env.KSTOCK_PEER_WORKER_ENABLED === 'true'
+  ? startPeerValidationScheduler({ statePath: peerStatePath,
+      externalCollectionEnabled:collectionEnabled,
+      savedEvidenceTasks:[...(collectionEnabled?[{name:'OFFICIAL_COLLECTION',run:()=>officialCollection.run()}]:[]),{name:'INFLUENCE_VALIDATION',run:()=>researchAutomation.run()},{name:'OVERNIGHT_REPORT',run:()=>overnightResearch.run()}],
+      reportPath: path.resolve(process.env.KSTOCK_V2_OUTPUT_PATH || path.join(projectDirectory, 'data/v2/reports/latest.json')),
+      intervalMs: Number(process.env.KSTOCK_PEER_WORKER_INTERVAL_MS || 1800000) }) : null;
+if (peerScheduler) (async () => {
+  const collection = await readDataCollectionStatus({ statePath: collectionStatePath });
+  if (!collection.jobs.length) await runDataCollectionWorker({ statePath: collectionStatePath, valuationDate: '2026-10-08', approved: false });
+  await peerScheduler.tick();
+})().catch(() => console.error('peer_validation_start_failed'));
+const benchmarkService=createBenchmarkService({filename:path.join(projectDirectory,'data/v2/benchmarks/latest.json')});
+registerBenchmarkRoutes(app,benchmarkService);
+registerStockPerformanceRoutes(app,createStockPerformanceService({loadCandidates:()=>candidateService.load(),loadBenchmarks:()=>benchmarkService.load()}));
+registerPaperPerformanceRoutes(app,createPaperPerformanceService({loadCandidates:()=>candidateService.load(),loadBenchmarks:()=>benchmarkService.load()}));
+registerPerformanceRoutes(app, createPerformanceReportService({ directory: path.join(projectDirectory, 'data/v2/performance') }));
 
 app.get("/api/watchlist", async (_req, res) => {
   try {

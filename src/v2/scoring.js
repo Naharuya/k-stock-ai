@@ -59,8 +59,8 @@ export function isD2Eligible(observedAt, analysisDate) {
   const observed = new Date(observedAt);
   const analysis = new Date(analysisDate);
   if (Number.isNaN(observed.getTime()) || Number.isNaN(analysis.getTime())) return false;
-  const cutoff = new Date(analysis);
+  const cutoff = new Date(analysis.getTime() + 9 * 60 * 60 * 1000);
   cutoff.setUTCDate(cutoff.getUTCDate() - 2);
   cutoff.setUTCHours(23, 59, 59, 999);
-  return observed <= cutoff;
+  return observed.getTime() <= cutoff.getTime() - 9 * 60 * 60 * 1000;
 }

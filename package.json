@@ -2,9 +2,16 @@
   "name": "k-stock",
   "version": "1.0.0",
   "description": "A stock analysis tool",
-  "main": "index.js",
+  "main": "src/server.js",
   "scripts": {
-    "test": "node test/index.js"
+    "test": "node test/index.js",
+    "test:offline": "node scripts/test-offline.js",
+    "v2:performance:offline": "node src/v2/performance_job.js",
+    "v2:check": "node src/v2/run_candidates.js --check",
+    "v2:kr:read-only": "node src/v2/kr_collect.js",
+    "v2:collect": "node src/v2/run_candidates.js --collect",
+    "v2:schedule:preview": "node src/v2/preview_schedule.js",
+    "start": "node src/server.js"
   },
   "keywords": [
     "stock",
@@ -14,6 +21,9 @@
   "author": "Ari",
   "license": "MIT",
   "dependencies": {
+    "adm-zip": "^0.6.1",
+    "fast-xml-parser": "^5.11.2",
+    "openai": "^7.10.0",
     "chai": "^4.3.6",
     "mocha": "^10.0.0",
     "dotenv": "^16.0.3",
@@ -27,22 +37,13 @@
     "cloudinary": "^1.26.0",
     "multer": "^1.4.4",
     "uuid": "^9.0.0",
-    "dotenv": "^16.0.3",
     "express-rate-limit": "^5.1.0",
     "helmet": "^6.0.0",
     "morgan": "^1.1.1",
     "swagger-ui-express": "^4.1.6",
-    "swagger-jsdoc": "^1.19.0",
-    "jsonwebtoken": "^9.0.2",
-    "bcrypt": "^5.0.1",
-    "express": "^4.18.2",
-    "body-parser": "^1.19.1",
-    "cors": "^2.8.5",
-    "dotenv": "^16.0.3",
-    "express-rate-limit": "^5.1.0",
-    "helmet": "^6.0.0",
-    "morgan": "^1.1.1",
-    "swagger-ui-express": "^4.1.6",
-    "swagger-jsdoc": "^1.19.0"
+    "swagger-jsdoc": "^6.3.0"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

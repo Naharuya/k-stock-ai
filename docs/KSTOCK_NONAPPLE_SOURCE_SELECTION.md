@@ -1,0 +1,23 @@
+# Non-Apple official event selection — 2026-10-13 KST
+
+Selection declared before price/return lookup: choose Microsoft FY2025 Q4 earnings released July30,2025, because its official investor-relations results explicitly distinguish completed repurchases/dividends from announcements and provide a fixed fiscal-quarter period. Neither observed stock return nor signal profitability is used in selection. Fetch one official release; persist SHA, collection time, minimal actual aggregate figures. Do not infer a dated trade, share quantity, exact public time, or conservative historical availability from a current fetch. If fiscal identity or actual repurchase wording is unavailable, retain BLOCKED and do not substitute guesses. Existing Apple/SEC and expansion files remain unchanged.
+
+Expected limitation: no MSFT price history or appropriate aligned benchmark acquired in this task; market reaction and combined-signal performance stay HOLD. A completed corporate cash-return aggregate is different from institutional holdings and personal insider transactions.
+
+## Actual result
+
+Two bounded direct official GET200 requests: initial identity/execution review, then SHA/minimal evidence persistence. Source: https://www.microsoft.com/en-us/Investor/earnings/FY-2025-Q4/press-release-webcast . Private evidence: `data/v2/influence/nonapple-sources.json` mode0600. No price selection or return lookup before selection. Existing Apple expansion untouched.
+
+Official fiscal Q4, April1–June30,2025: Microsoft reports completed USD9.4bn shareholder return through dividends AND repurchases. Store that combined aggregate without allocating the whole amount to either component. It is a rounded official amount, not a precise individual transaction. Cash-flow table repurchase/dividend settlement figures have a different aggregation basis and were not silently substituted. Actual aggregate execution verified; transactionDate/quantity/price null; company actor MSFT, personal attribution false.
+
+Release date July30,2025 is printed on the official page. Exact first public timestamp and independently proven historical conservative boundary are not acquired. `publicAvailableAt` is the current successful official-page observation `checkedAt`, and `publicationTimePrecision=OBSERVED_COLLECTION_TIME`; `firstPublicAvailableAt`/`conservativeStart` null. It proves public availability now, not retroactive availability July30. AcceptedAt null (official IR, not SEC acceptance).
+
+MSFT historical prices not collected by this source task; aligned benchmark unavailable; market reaction, combined signal and investment hypothesis HOLD. Price collection assigned independently must not promote a historical result solely from the dated release. API/UI/regression owned by root, NOT RUN in this source-only task. Actual order calls0; no credentials, auth sessions, paid services, production, other projects or existing data modified.
+
+## Additional official dated-release review
+
+Root requested a bounded two-request followup to distinguish absence of exact time from absence of a corroborated release date. Existing approved SEC read-only client acquired submissions metadata and [Microsoft 8-K](https://www.sec.gov/Archives/edgar/data/789019/000095017025100226/msft-20250730.htm), accession0000950170-25-100226, filingDate2025-07-30. Item2.02 explicitly confirms Microsoft issued the quarterly/year financial-results press release on July30; Exhibit99.1 is dated July30. This independently corroborates the date printed on the official IR page.
+
+Separate private `nonapple-publication-review.json` stores both source SHA hashes. Under the newly requested date-based conservative research policy, 2025-07-30T23:59:59-04:00 is `VERIFIED_CONSERVATIVE_DAY_BOUND`, with DAY precision and `CONSERVATIVE_END_OF_DAY`. It is an explicit research assumption supported by two official dated release sources, not a measured first-public timestamp, original HTTP metadata or historical receipt log. `publicAvailableAt` and `acceptedAt` remain null in this review; original event current-observation field remains unchanged and must not be mistaken for the historical conservative boundary. Prices/alignment/actions still must independently pass before any return is enabled.
+
+Total direct requests this non-Apple source workstream:4 GET200 (IR2+SEC2). No additional market-data request. Exact/publication/transaction timestamps remain unverified. Earlier lack-of-bound notes describe the original source-only pass; this independent review is the subsequent dated-release policy evidence, not an overwrite of observed facts.

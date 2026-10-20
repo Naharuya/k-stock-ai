@@ -1,6 +1,14 @@
 const ENDPOINTS = {
+  company: 'company.json',
+  'share-count': 'stockTotqySttus.json',
+  dividends: 'alotMatter.json',
+  capital: 'irdsSttus.json',
+  treasury: 'tesstkAcqsDspsSttus.json',
   financials: 'fnlttSinglAcntAll.json',
+  'financial-periods': 'fnlttSinglAcnt.json',
   disclosures: 'list.json',
+  majorstock: 'majorstock.json',
+  elestock: 'elestock.json',
 };
 
 function createRequestError(message, code) {
@@ -33,11 +41,15 @@ export function createOpenDartRequest({
     const url = new URL(ENDPOINTS[operation], `${baseUrl.replace(/\/+$/, '')}/`);
     url.searchParams.set('crtfc_key', apiKey);
 
-    if (operation === 'financials') {
+    if (['financials','financial-periods','share-count','dividends','capital','treasury'].includes(operation)) {
+      if (!/^\d{8}$/.test(params.corpCode || '') || !/^\d{4}$/.test(String(params.year || '')) || !['11011','11012','11013','11014'].includes(params.reportCode ?? '11011')) throw new Error('Invalid OpenDART reporting scope');
       url.searchParams.set('corp_code', params.corpCode);
       url.searchParams.set('bsns_year', params.year);
       url.searchParams.set('reprt_code', params.reportCode ?? '11011');
       url.searchParams.set('fs_div', params.fsDiv ?? 'CFS');
+    } else if (operation === 'company' || operation === 'majorstock' || operation === 'elestock') {
+      if (!/^\d{8}$/.test(params.corpCode || '')) throw new Error('Invalid OpenDART corp code');
+      url.searchParams.set('corp_code', params.corpCode);
     } else {
       url.searchParams.set('corp_code', params.corpCode);
       if (params.beginDate) url.searchParams.set('bgn_de', params.beginDate);
@@ -48,7 +60,7 @@ export function createOpenDartRequest({
 
     let response;
     try {
-      response = await fetchImpl(url, { signal: AbortSignal.timeout(timeoutMs) });
+      response = await fetchImpl(url, { signal: AbortSignal.timeout(timeoutMs), redirect: 'error' });
     } catch (error) {
       if (error?.name === 'TimeoutError' || error?.name === 'AbortError') {
         throw createRequestError('OpenDART request timed out', 'TIMEOUT');

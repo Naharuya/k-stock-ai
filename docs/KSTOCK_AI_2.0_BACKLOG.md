@@ -22,9 +22,9 @@
 - [ ] Add actor credibility scoring.
 
 ## Phase 3 — capital tracker MVP
-- [ ] Add OpenDART ownership connector stub.
-- [ ] Add SEC 13F connector stub.
-- [ ] Add SEC Form 4 connector stub.
+- [x] Add OpenDART ownership collector and optional candidate API refresh (live provider verification pending).
+- [x] Connect Berkshire SEC 13F holdings to GLOBAL evidence (explicit CUSIP mapping; live verification pending).
+- [x] Add SEC Form 4 collection and candidate evidence (recent submissions only; live verification pending).
 - [ ] Add transaction/publication date separation.
 - [ ] Add D-2 eligibility filter.
 
@@ -56,11 +56,11 @@
 - [ ] Add daily report JSON format.
 
 ## Phase 8 — app/API
-- [ ] Add `/api/v2/candidates` endpoint.
-- [ ] Add `/api/v2/candidates/:ticker` endpoint.
-- [ ] Add app home cards.
-- [ ] Add detailed evidence view.
-- [ ] Add risk/bear view.
+- [x] Add `/api/v2/candidates` endpoint (local input file; external collection not connected).
+- [x] Add `/api/v2/candidates/:ticker` endpoint (evidence and risk detail).
+- [x] Add web candidate cards (Android native view remains pending).
+- [x] Add detailed evidence view (web).
+- [x] Add risk/bear view (web).
 
 ## Phase 9 — automation
 - [ ] Add daily scheduler design.

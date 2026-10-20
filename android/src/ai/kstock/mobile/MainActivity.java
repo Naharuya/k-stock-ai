@@ -49,6 +49,7 @@ public class MainActivity extends Activity {
   sample=button(root,"샘플 분석 확인 (실제 종목 아님)",()->sampleAnalysis());sample.setVisibility(View.GONE);
   web=new WebView(this);root.addView(web,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);
   WebSettings settings=web.getSettings();settings.setJavaScriptEnabled(true);settings.setDomStorageEnabled(true);
+  settings.setTextZoom(Math.round(getResources().getConfiguration().fontScale*100));
   settings.setAllowFileAccess(false);settings.setAllowContentAccess(false);settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
   settings.setSaveFormData(false);settings.setSupportMultipleWindows(false);settings.setUserAgentString(settings.getUserAgentString()+" KStockAndroid/2.6.5");
   CookieManager.getInstance().setAcceptThirdPartyCookies(web,false);
@@ -70,7 +71,7 @@ public class MainActivity extends Activity {
     // WebView does not expose POST bodies here. Only the scoped native fetch bridge sends them.
     if(!request.getMethod().equals("GET")&&!request.getMethod().equals("HEAD"))return response(ApiClient.failure(ApiClient.State.BLOCKED,405));
     ApiClient.Reply reply=current.request(path,request.getMethod(),null);
-    if(path.startsWith("/api/")&&reply.state!=ApiClient.State.CONNECTED)runOnUiThread(()->showState(reply.state));
+    if(path.startsWith("/api/"))runOnUiThread(()->{if(current==client&&!isDestroyed())showState(reply.state);});
     if(request.isForMainFrame() && reply.type.contains("text/html"))return htmlResponse(reply);
     return response(reply);
    }
@@ -85,6 +86,7 @@ public class MainActivity extends Activity {
  private String injectedHtml(String html){String script="<script src='/__kstock_android_bridge__.js'></script>";int p=html.toLowerCase(Locale.ROOT).indexOf("<head");if(p>=0){int end=html.indexOf('>',p);if(end>=0)return html.substring(0,end+1)+script+html.substring(end+1);}return script+html;}
  private void showState(ApiClient.State state){
   if(isFinishing()||isDestroyed())return;
+  if(state==ApiClient.State.OFFLINE||state==ApiClient.State.FAILED)web.evaluateJavascript("window.kstockConnectionFailed&&window.kstockConnectionFailed()",null);
   status.setText((healthConnected&&state==ApiClient.State.AUTH_REQUIRED?"서버는 연결되었지만 ":"")+ApiClient.message(state));
  }
  private boolean online(){ConnectivityManager cm=getSystemService(ConnectivityManager.class);NetworkCapabilities c=cm.getNetworkCapabilities(cm.getActiveNetwork());return c!=null&&c.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);}
@@ -132,6 +134,8 @@ public class MainActivity extends Activity {
   EditText address=new EditText(this);address.setSingleLine(true);address.setText(server);address.setHint("HTTPS 서버 주소");address.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_URI);form.addView(address);
   EditText secret=new EditText(this);secret.setSingleLine(true);secret.setHint("외부접속 토큰 (비워두면 해당 서버의 저장값 유지)");secret.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);secret.setSaveEnabled(false);secret.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);form.addView(secret);
   Button useDefault=new Button(this);useDefault.setText("운영 기본 주소 사용");useDefault.setOnClickListener(v->address.setText(ServerAddress.DEFAULT));form.addView(useDefault);
+  Button forget=new Button(this);forget.setText("현재 서버의 저장 토큰 삭제");
+  forget.setOnClickListener(v->{try{vault.forget(server);secret.setText("");status.setText("현재 서버의 기기 저장 토큰을 삭제했습니다. 다른 서버 토큰과 웹 화면의 별도 입력은 유지됩니다.");}catch(Exception ignored){status.setText("저장 토큰을 삭제하지 못했습니다. 기기 저장소 상태를 확인해 주세요.");}});form.addView(forget);
   AlertDialog dialog=new AlertDialog.Builder(this).setTitle("외부접속 설정").setMessage("기본 서버: https://kstock.ai.kr\n토큰은 기기에 암호화 저장하며, 서버 주소별로 구분합니다. 기존 사용자 지정 주소는 직접 변경하기 전까지 보존합니다.").setView(form).setNegativeButton("취소",null).setPositiveButton("저장 후 연결",null).create();
   dialog.setOnDismissListener(d->secret.setText(""));
   dialog.setOnShowListener(d->{dialog.getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
@@ -152,7 +156,7 @@ public class MainActivity extends Activity {
     ApiClient.Reply r=current.request(path,method,body);
     JSONObject value=new JSONObject();value.put("code",r.code);value.put("type",r.type);value.put("body",r.text());
     String encoded=android.util.Base64.encodeToString(value.toString().getBytes(StandardCharsets.UTF_8),android.util.Base64.NO_WRAP);
-    runOnUiThread(()->{if(epoch!=generation||isDestroyed())return;if(r.state!=ApiClient.State.CONNECTED)showState(r.state);web.evaluateJavascript("window.__kstockReply&&window.__kstockReply("+id+",'"+encoded+"')",null);});
+    runOnUiThread(()->{if(epoch!=generation||isDestroyed())return;showState(r.state);web.evaluateJavascript("window.__kstockReply&&window.__kstockReply("+id+",'"+encoded+"')",null);});
    }catch(Exception ignored){}finally{queued.decrementAndGet();}});}catch(RejectedExecutionException ignored){queued.decrementAndGet();}
   }
  }

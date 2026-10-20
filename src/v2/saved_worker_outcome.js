@@ -1,0 +1,1 @@
+export function savedWorkerOutcome(status){ return ['UNCHANGED_SOURCE','PARTIAL','VERIFIED'].includes(status)?'COMPLETED':status==='SKIPPED'?'SKIPPED':'BLOCKED'; }

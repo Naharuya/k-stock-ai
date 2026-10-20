@@ -57,6 +57,8 @@ test('OpenDART empty list is safe and API errors fail closed', async () => {
     retrievedPages: 0,
     requestedWindows: 1,
     truncated: false,
+    windows: [{ beginDate: undefined, endDate: undefined, status: '013', totalPages: 0, retrievedPages: 0, truncated: false }],
+    corporateActionCoverageVerified: false,
   });
 
   const errorClient = createOpenDartClient({
@@ -228,7 +230,7 @@ test('OpenDART HTTP adapter fails safely and tags retryable failures', async () 
     fetchImpl: async () => ({ ok: false, status: 429 }),
   });
   await assert.rejects(
-    rateLimited({ service: 'opendart', operation: 'financials' }),
+    rateLimited({ service: 'opendart', operation: 'financials', params: {corpCode:'00126380',year:'2025'} }),
     (error) => error.code === 'RATE_LIMIT',
   );
 
@@ -237,7 +239,7 @@ test('OpenDART HTTP adapter fails safely and tags retryable failures', async () 
     fetchImpl: async () => { throw new DOMException('timeout', 'TimeoutError'); },
   });
   await assert.rejects(
-    timedOut({ service: 'opendart', operation: 'financials' }),
+    timedOut({ service: 'opendart', operation: 'financials', params: {corpCode:'00126380',year:'2025'} }),
     (error) => error.code === 'TIMEOUT',
   );
 

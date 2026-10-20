@@ -1,0 +1,35 @@
+import {reconcileReportedSharePeriod} from './share_period_reconciliation.js';
+import {reviewShareDates} from './share_date_review.js';
+import {screenFinancialRisk} from './financial_risk_screen.js';
+import {reviewCurrentRisk} from './current_risk_review.js';
+import {buildResearchReadiness} from './research_readiness.js';
+import {reviewGlobalValuation} from './global_valuation_gate.js';
+import {reviewSavedInterimTtm} from './sec_quarter_ttm.js';
+import {observeCurrentEvent} from './current_observation.js';
+export function currentCandidateDetail({companyId,events,financialRow,marketRow,observationInputs,riskReviews=[],asOf}){
+ const snapshot=financialRow?.financialSnapshot;
+ const usable=financialRow?.status==='PARTIAL'&&Date.parse(financialRow.checkedAt)<=Date.parse(asOf)&&snapshot&&!snapshot.missing?.includes('annualStatementStale')&&snapshot.filed&&Date.parse(snapshot.filed)<=Date.parse(asOf);
+ const financial=usable?{status:snapshot.status,periodStart:snapshot.periodStart||null,periodEnd:snapshot.periodEnd||null,disclosureDate:snapshot.filed,checkedAt:financialRow.checkedAt,currency:'USD',unit:'CURRENCY_UNITS',basis:'ANNUAL_NOT_TTM',raw:snapshot.raw||{},ratios:snapshot.ratios||{},sourceUrl:snapshot.sourceUrl||financialRow.sourceUrl,missing:snapshot.missing||[],latestInterimVerified:false}:{status:'INSUFFICIENT_DATA',basis:'ANNUAL_NOT_TTM',raw:{},missing:['OFFICIAL_FINANCIAL_REQUIRED']};
+ const interim=financialRow?.status==='PARTIAL'&&Date.parse(financialRow.checkedAt)<=Date.parse(asOf)&&Date.parse(financialRow.interimSnapshot?.disclosureDate)<=Date.parse(asOf)?{...financialRow.interimSnapshot,metrics:Object.fromEntries(Object.entries(financialRow.interimSnapshot.metrics||{}).map(([k,m])=>[k,m?.basis==='YEAR_TO_DATE'?{...m,basis:'CUMULATIVE_PERIOD'}:m])),annualPeriodIsNewer:!!snapshot?.periodEnd&&snapshot.periodEnd>financialRow.interimSnapshot.periodEnd}:{status:'INSUFFICIENT_DATA',metrics:{},ttmStatus:'INSUFFICIENT_DATA',reasons:['LATEST_INTERIM_REQUIRED']};
+ const instantKeys=['assets','liabilities','equity'];
+ const interimBalancesValid=interim.status==='PARTIAL'&&instantKeys.every(k=>{const m=interim.metrics?.[k];return m?.basis==='INSTANT'&&m.periodEnd===interim.periodEnd&&m.currency==='USD'&&m.unit==='CURRENCY_UNITS';});
+ const interimFinancialScreen=screenFinancialRisk({companyId,asOf,sourceUrl:financialRow?.sourceUrl,sourceHash:financialRow?.sourceHash,financial:interimBalancesValid?{...interim,checkedAt:financialRow.checkedAt,basis:'INTERIM_INSTANT',raw:Object.fromEntries(instantKeys.map(k=>[k,interim.metrics[k].value]))}:{}});
+ const flags=[];
+ if(!usable)flags.push('FINANCIAL_DATA_MISSING');
+ if(usable&&Number.isFinite(snapshot.raw?.equity)&&snapshot.raw.equity<=0)flags.push('NON_POSITIVE_EQUITY');
+ if(usable&&Number.isFinite(snapshot.raw?.operatingCashFlow)&&snapshot.raw.operatingCashFlow<0)flags.push('NEGATIVE_OPERATING_CASH_FLOW');
+ if(usable&&snapshot.status!=='READY')flags.push('FINANCIAL_FIELDS_INCOMPLETE');
+ flags.push('LATEST_INTERIM_NOT_VERIFIED','CORPORATE_ACTIONS_NOT_FULLY_VERIFIED','PEER_SAMPLE_NOT_VERIFIED','REGULATORY_GOVERNANCE_REVIEW_REQUIRED');
+ const ttm=reviewSavedInterimTtm(interim,snapshot,financialRow?.sourceHash,asOf,financialRow?.quarterHistory);
+ const observedShares=(financialRow?.scopeReviews||[]).filter(r=>Number.isFinite(Date.parse(r.checkedAt))&&Date.parse(r.checkedAt)<=Date.parse(asOf)).flatMap(r=>(r.shareRecords||[]).map(s=>({...s,sourceUrl:r.sourceUrl,sourceHash:r.sourceHash,observedAt:r.sharesCheckedAt||r.checkedAt}))).filter(s=>s.asOfDate<=String(asOf).slice(0,10)&&Date.parse(s.observedAt)<=Date.parse(asOf)).sort((a,b)=>b.asOfDate.localeCompare(a.asOfDate));
+ const observedPrice=marketRow?.priceSnapshot?.sessionDate<=String(asOf).slice(0,10)&&Date.parse(marketRow?.priceSnapshot?.observedAt)<=Date.parse(asOf)?marketRow.priceSnapshot:null;
+ const capitalShareRecords=(financialRow?.scopeReviews||[]).flatMap(r=>(r.capitalShareRecords||[]).map(s=>({...s,sourceUrl:r.sourceUrl,sourceHash:r.sourceHash,observedAt:r.sharesCheckedAt||r.checkedAt})));
+ const capitalFlows=(financialRow?.scopeReviews||[]).filter(r=>Date.parse(r.checkedAt)<=Date.parse(asOf)&&Date.parse(r.sharesCheckedAt||r.checkedAt)<=Date.parse(asOf)).flatMap(r=>(r.capitalFlows||[]).filter(f=>f.periodEnd<=String(asOf).slice(0,10)).map(f=>({...f,documentId:r.documentId,sourceUrl:r.sourceUrl,sourceHash:r.sourceHash})));
+ const shareDateReview={...reviewShareDates({observedShares,capitalShareRecords,priceDate:observedPrice?.sessionDate,asOf}),capitalFlows,periodReconciliations:capitalFlows.filter(f=>f.type==='REPURCHASED_AND_RETIRED').map(flow=>reconcileReportedSharePeriod({capitalShareRecords,flow}))};
+ const verifiedInputs=marketRow?.validatedValuationInputs;
+ const valuationReview=reviewGlobalValuation({asOf,ttm,price:verifiedInputs?.price,shares:verifiedInputs?.shares,actions:verifiedInputs?.actions,bookValue:verifiedInputs?.bookValue});
+ // Observations are evidence inventory, never verification credentials.
+ valuationReview.evidence={valuationDate:String(asOf).slice(0,10),price:{status:observedPrice?.status||'INSUFFICIENT_DATA',close:observedPrice?.close??null,currency:observedPrice?.currency||null,asOfDate:observedPrice?.sessionDate||null,sourceUrl:observedPrice?.sourceUrl||null,verificationStatus:'PENDING'},shares:{status:observedShares.length?'OBSERVED_NOT_RECONCILED':'INSUFFICIENT_DATA',asOfDate:observedShares[0]?.asOfDate||null,count:observedShares[0]?.count??null,reportedDecimals:observedShares[0]?.reportedDecimals??null,sourceUrl:observedShares[0]?.sourceUrl||null},actions:{status:marketRow?.corporateActionSnapshot?.status||'INSUFFICIENT_DATA',fullCoverageVerified:false},revenue:{status:ttm.metrics.revenue.status,periodEnd:ttm.metrics.revenue.periodEnd||null},earnings:{status:ttm.metrics.netIncome.status,commonAttributionVerified:false}};
+ const filings=[...new Map(events.filter(e=>e.verificationStatus==='VERIFIED').map(e=>[e.documentId||e.eventId,e])).values()];
+ return {reason:'OFFICIAL_REPORTED_CAPITAL_ACTION_OBSERVED_NOT_RECOMMENDATION',financial,interim,ttm,valuationReview,readiness:buildResearchReadiness({ttm,valuationReview}),observedShares,shareDateReview,conflictReview:financialRow?.conflictReview||null,corporateActions:{status:marketRow?.corporateActionSnapshot?.status||'INSUFFICIENT_DATA',fullCoverageVerified:false,sourceUrl:marketRow?.corporateActionSnapshot?.sourceUrl||null},valuation:{status:'HOLD',annualPe:null,pbr:null,psr:null,evEbitda:null,reason:'SHARE_COUNT_CORPORATE_ACTIONS_AND_PEER_VALIDATION_REQUIRED'},risk:{interimFinancialScreen,...reviewCurrentRisk({companyId,records:riskReviews,anchors:financialRow?.scopeReviews||[],asOf,flags}),financialScreen:screenFinancialRisk({companyId,financial,sourceUrl:financialRow?.sourceUrl,sourceHash:financialRow?.sourceHash,asOf})},observations:filings.map(e=>({...observeCurrentEvent({...e,eventId:e.documentId?'filing:'+e.documentId:e.eventId,companyId},{asOf,inputs:observationInputs}),documentId:e.documentId||null,independentSampleUnit:'DISCLOSURE_NOT_TRANSACTION_ROW'})),recommendationStatus:'HOLD'};
+}

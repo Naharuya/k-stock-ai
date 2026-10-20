@@ -98,7 +98,8 @@ export function createOpenDartClient({ request }) {
     }
 
     const items = windowResults.flatMap((result) => result.items);
-    const totalPages = windowResults.reduce((total, result) => total + result.totalPages, 0);
+    const totalPages = windowResults.some((result) => result.totalPages === null)
+      ? null : windowResults.reduce((total, result) => total + result.totalPages, 0);
     const retrievedPages = windowResults.reduce((total, result) => total + result.retrievedPages, 0);
     const truncated = windowResults.some((result) => result.truncated);
 
@@ -118,6 +119,12 @@ export function createOpenDartClient({ request }) {
       retrievedPages,
       requestedWindows: windows.length,
       truncated,
+      windows: windowResults.map((result, index) => ({
+        ...windows[index], status: result.status, totalPages: result.totalPages,
+        retrievedPages: result.retrievedPages, truncated: result.truncated,
+      })),
+      // Listing completeness does not verify economic events or effective dates.
+      corporateActionCoverageVerified: false,
     };
   }
 
@@ -145,9 +152,10 @@ export function createOpenDartClient({ request }) {
       if (Array.isArray(response.list)) items.push(...response.list);
 
       const responseTotalPages = Number(response.total_page);
-      if (Number.isInteger(responseTotalPages) && responseTotalPages > 0) {
-        totalPages = Math.max(pageNo, responseTotalPages);
+      if (!Number.isInteger(responseTotalPages) || responseTotalPages < pageNo) {
+        return { status: '000', items, totalPages: null, retrievedPages, truncated: true };
       }
+      totalPages = responseTotalPages;
     }
 
     return {
@@ -159,5 +167,9 @@ export function createOpenDartClient({ request }) {
     };
   }
 
-  return { getFinancials, getDisclosures };
+  async function getFinancialPeriods({corpCode,year,reportCode='11011'}) {
+    const response=await request({service:'opendart',operation:'financial-periods',params:{corpCode,year,reportCode}});
+    assertSuccessfulResponse(response);return {status:response.status??'000',items:Array.isArray(response.list)?response.list:[]};
+  }
+  return { getFinancials, getDisclosures, getFinancialPeriods };
 }

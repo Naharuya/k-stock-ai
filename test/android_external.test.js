@@ -45,3 +45,8 @@ test('WebView fetch bridge preserves API POST bodies and never receives the toke
  await window.fetch(new Request('https://kstock.ai.kr/api/analyze',{method:'POST',body:'{}'}));
  assert.equal(native[1].method,'POST');assert.equal(native[1].body,'{}');
 });
+
+test('stored token deletion targets one origin and reports persistence failure',async()=>{
+ const source=await readFile(new URL('../android/src/ai/kstock/mobile/TokenVault.java',import.meta.url),'utf8');
+ assert.match(source,/void forget\(String origin\)/);assert.match(source,/remove\(origin\)\.commit\(\)/);assert.match(source,/TOKEN_DELETE_FAILED/);assert.doesNotMatch(source,/\.clear\(\)|deleteEntry/);
+});

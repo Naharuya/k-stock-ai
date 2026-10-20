@@ -1,3 +1,6 @@
+import {assessKrRecommendation} from './recommendation_gate.js';
+import { analyzeKrValuation } from './kr_valuation.js';
+import { buildValuationComparison } from './valuation_comparison.js';
 import { assertSafeKStockV2Environment } from './scoring.js';
 import { runEvidenceAgent } from './agents/evidence_agent.js';
 import { runCapitalTrackerAgent } from './agents/capital_tracker_agent.js';
@@ -22,13 +25,14 @@ export function runKStockV2Pipeline(input, env = process.env) {
   const evidenceGate = runEvidenceAgent(input.evidence || [], input.analysisDate);
   const byTicker = new Map();
   for (const item of evidenceGate.accepted) {
-    if (!byTicker.has(item.ticker)) byTicker.set(item.ticker, []);
-    byTicker.get(item.ticker).push(item);
+    const key = `${item.market}:${item.ticker}`;
+    if (!byTicker.has(key)) byTicker.set(key, []);
+    byTicker.get(key).push(item);
   }
 
   const candidates = [];
   for (const company of input.companies || []) {
-    const ev = byTicker.get(company.ticker) || [];
+    const ev = byTicker.get(`${company.market}:${company.ticker}`) || [];
 
     const capital = runCapitalTrackerAgent(company.ticker, ev);
     const media = runMediaMentionAgent(company.ticker, ev);
@@ -71,7 +75,17 @@ export function runKStockV2Pipeline(input, env = process.env) {
       bearSeverity: bear.severity,
     };
 
-    const evidencePassed = evidenceGate.passed && ev.length > 0;
+    const reviewRequired = (input.reviewRequired || []).filter(item => item.ticker === company.ticker && item.market === company.market);
+    const krAnalysis = company.market === 'KR' ? analyzeKrValuation(company, [...input.companies,...(input.krPeers || [])], input.krHistory || [], input.analysisDate) : null;
+    const recommendationGate=company.market==='KR' && (company.krSnapshot || input.requireVerifiedRecommendations)
+      ? assessKrRecommendation(company,krAnalysis,input.analysisDate,{evidencePassed:evidenceGate.passed&&ev.length>0&&reviewRequired.length===0,riskExecuted:true}) : null;
+    const dataBlockers = [];
+    if(recommendationGate?.status==='HELD')dataBlockers.push('KR_RECOMMENDATION_GATE_HELD');
+    if (company.market === 'GLOBAL' && company.ticker === 'AAPL') dataBlockers.push('APPLE_RANKING_HOLD');
+    if (company.krSnapshot && ['INSUFFICIENT_DATA', 'UNDER_REVIEW'].includes(krAnalysis?.status)) dataBlockers.push('KR_VALUATION_REVIEW_REQUIRED');
+    if (!fundamental.available || company.financialSnapshot && company.financialSnapshot.status !== 'READY') dataBlockers.push('FINANCIAL_DATA_INCOMPLETE');
+    if (!valuation.available) dataBlockers.push('VALUATION_DATA_MISSING');
+    const evidencePassed = evidenceGate.passed && ev.length > 0 && reviewRequired.length === 0 && dataBlockers.length === 0;
     const committee = runInvestmentCommitteeAgent(company.ticker, signals, { evidencePassed });
     const compliance = runComplianceAgent(company.ticker, {
       evidencePassed,
@@ -84,8 +98,23 @@ export function runKStockV2Pipeline(input, env = process.env) {
       ticker: company.ticker,
       market: company.market,
       companyName: company.companyName,
+      industryCode: company.industryCode || null,
+      exchange: company.market === 'KR' && ['KOSPI','KOSDAQ'].includes(company.exchange) ? company.exchange : null,
       score: committee.score,
+      signals,
       approved,
+      reviewRequired,
+      dataBlockers,
+      krValuationAnalysis: krAnalysis,
+      recommendationGate,
+      financialSnapshot: company.financialSnapshot || null,
+      priceSnapshot: company.priceSnapshot || null,
+      corporateActionSnapshot: company.corporateActionSnapshot || null,
+      valuationSnapshot: company.valuationSnapshot || null,
+      valuationComparisonSnapshot: company.market === 'GLOBAL' ? buildValuationComparison(company, input.analysisDate) : null,
+      evidence: ev,
+      selectionReasons: committee.reasons,
+      performanceTracking: { status: 'PENDING', horizons: [1, 5, 20], reason: 'ADJUSTED_PRICES_NOT_CONNECTED' },
       committee,
       compliance,
       agents: {

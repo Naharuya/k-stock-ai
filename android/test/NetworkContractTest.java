@@ -30,6 +30,7 @@ public class NetworkContractTest {
   ApiClient client=new ApiClient(ServerAddress.DEFAULT,origin->{tokenReads.incrementAndGet();check(origin.equals(ServerAddress.DEFAULT),"origin-bound token");return token;},wire);
   client.request("/health","GET",null);check(tokenReads.get()==0,"health never reads token");
   for(String method:Arrays.asList("GET","POST","PUT","PATCH","DELETE","HEAD"))check(client.request("/api/analyze",method,method.equals("GET")||method.equals("HEAD")?null:"{}").state==ApiClient.State.CONNECTED,"API method authenticated");
+  check(client.request("/api/v2/influence/research","GET",null).state==ApiClient.State.CONNECTED,"influence API shares authenticated read contract");
   int before=calls.get();ApiClient empty=new ApiClient(ServerAddress.DEFAULT,o->"",wire);
   check(empty.request("/api/analyze","POST","{}").state==ApiClient.State.AUTH_REQUIRED,"missing token state");check(calls.get()==before,"missing token blocks transport");
   for(String route:Arrays.asList("https://evil.example/api/analyze","//evil.example/api/a","/api/../health","/api/%2e%2e/health","/api/kis/orders","/api/order","/api/broker/place"))check(client.request(route,"GET",null).state==ApiClient.State.BLOCKED,"unsafe target blocked");

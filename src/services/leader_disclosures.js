@@ -4,12 +4,38 @@ const BERKSHIRE_CIK = "0001067983";
 const SUBMISSIONS_URL = `https://data.sec.gov/submissions/CIK${BERKSHIRE_CIK}.json`;
 const SEC_COMPANY_URL = `https://www.sec.gov/Archives/edgar/data/${Number(BERKSHIRE_CIK)}`;
 const CACHE_DURATION_MS = 10 * 60 * 1000;
+let requestQueue = Promise.resolve();
 const xmlParser = new XMLParser({
   ignoreAttributes: true,
   parseTagValue: false,
   removeNSPrefix: true,
   trimValues: true,
 });
+
+export function createSecRequest({ request = globalThis.fetch, userAgent } = {}) {
+  async function requestSec(url, accept) {
+    requestQueue = requestQueue.then(() => new Promise(resolve => setTimeout(resolve, 250)));
+    await requestQueue;
+    let response;
+    try {
+      response = await request(url, {
+      headers: {
+        Accept: accept,
+        "User-Agent": userAgent,
+      },
+      signal: AbortSignal.timeout(8000),
+      });
+    } catch {
+      throw new Error('SEC network request failed');
+    }
+
+    if (!response?.ok) {
+      throw new Error(`SEC request failed: ${response?.status ?? "invalid response"}`);
+    }
+    return response;
+  }
+  return requestSec;
+}
 
 export function createLeaderDisclosureService({
   request = globalThis.fetch,
@@ -19,20 +45,7 @@ export function createLeaderDisclosureService({
   let cache;
   let portfolioCache;
 
-  async function requestSec(url, accept) {
-    const response = await request(url, {
-      headers: {
-        Accept: accept,
-        "User-Agent": userAgent,
-      },
-      signal: AbortSignal.timeout(8000),
-    });
-
-    if (!response?.ok) {
-      throw new Error(`SEC request failed: ${response?.status ?? "invalid response"}`);
-    }
-    return response;
-  }
+  const requestSec = createSecRequest({ request, userAgent });
 
   return {
     async getBerkshireFilings() {
@@ -77,12 +90,14 @@ export function createLeaderDisclosureService({
       return value;
     },
 
-    async getBerkshirePortfolio() {
-      if (portfolioCache && portfolioCache.expiresAt > now()) return portfolioCache.value;
-
+    async getBerkshirePortfolio({ filing } = {}) {
       const filings = await this.getBerkshireFilings();
-      const latest = filings.filings[0];
+      const latest = filing ? filings.filings.find(item => item.accessionNumber === filing.accessionNumber) : filings.filings[0];
       if (!latest) throw new Error("SEC has no public Berkshire 13F filing");
+      if (!/^\d{10}-\d{2}-\d{6}$/.test(latest.accessionNumber) || !/^(?:xsl[A-Za-z0-9_]+\/)?[\w.-]+\.xml$/.test(latest.primaryDocument)) {
+        throw new Error("SEC filing identifiers are malformed");
+      }
+      if (portfolioCache?.accessionNumber === latest.accessionNumber && portfolioCache.expiresAt > now()) return portfolioCache.value;
 
       const accessionPath = latest.accessionNumber.replaceAll("-", "");
       const filingDirectory = `${SEC_COMPANY_URL}/${accessionPath}`;
@@ -124,13 +139,14 @@ export function createLeaderDisclosureService({
         quarterEnd: latest.reportDate,
         filingDate: latest.filingDate,
         form: latest.form,
+        accessionNumber: latest.accessionNumber,
         source: filings.source,
         checkedAt: new Date(now()).toISOString(),
         holdingsUrl: `${filingDirectory}/index.json`,
         holdings,
       };
 
-      portfolioCache = { value, expiresAt: now() + CACHE_DURATION_MS };
+      portfolioCache = { value, accessionNumber: latest.accessionNumber, expiresAt: now() + CACHE_DURATION_MS };
       return value;
     },
   };

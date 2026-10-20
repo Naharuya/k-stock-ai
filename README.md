@@ -1,6 +1,6 @@
 # K-Stock AI v0.1.0
 
-한국 주식시장(KOSPI/KOSDAQ) 전용 멀티에이전트 투자 리서치 MVP입니다.
+한국 주식시장(KOSPI/KOSDAQ)과 글로벌 공식 자료를 연구하는 멀티에이전트 투자 리서치 MVP입니다.
 
 ## 현재 범위
 
@@ -20,6 +20,12 @@
 - 실제 주문 기능 비활성화
 
 > 이 버전은 투자 리서치/의사결정 보조용입니다. 실제 주문 기능은 포함하지 않습니다.
+
+## 영향력 인물·자본 행동 연구 (로컬 v1)
+
+Global Influence와 Signal Research 화면에서 공식 발언·당시 직책·기업 자본 행동·기관 보유 보고의 근거를 확인합니다. 인물의 발언과 기관/기업의 행동을 개인 거래로 합치지 않으며, 날짜만 확인된 공개 자료의 장중 성과는 보류합니다. 공식 발언 2건에 설치된 로컬 Qwen 모델의 사후 해석을 연결했습니다. 지수 관측과 검증된 투자 신호 성과는 구분하며, 실제 최초 공개 시각과 종목·벤치마크 자료가 부족한 신호의 수익률은 null로 유지합니다. 추천·삼성전자 성과·Apple 순위는 HOLD, 실거래는 OFF를 유지합니다. 공식 Berkshire13F3건의 AAPL 보유량3억→3억→2억8천만 주와 NEW HOLDINGS 정정 범위를 연결했습니다. 기관 보유 변화는 개인 매도·확정 거래일과 구분합니다. 공식 직책 관계로 연결된 후보도 방향 근거 부족 시 보류하며, 초과수익과 그룹 통계는 유효 표본0이면 null로 표시합니다. 수집은 명시적 읽기 전용 실행이고 기존30분 Worker는 저장 근거만 재검증합니다. KIS의 공식 해외 기간별 조회로 Apple 원주가200건과 FRED S&P500155건을 확보했습니다. SEC 접수 기록3건을 원문 헤더와 대조했지만 최초 웹 공개시각·실행가능가격·기업행동 검증이 부족해 시장 반응은 보류합니다. 가격 확보 구간과 접수 기준 관측 후보 날짜를 실제 공개·거래 시점과 구분해 표시합니다.
+
+로컬 API: `GET /api/v2/influence/research`. [API 계약](docs/KSTOCK_INFLUENCE_API.md), [최신 QA](docs/KSTOCK_QA_FOLLOWUP_REPORT.md).
 
 ## 권장 환경
 
@@ -151,6 +157,8 @@ adb install -r android/app/build/outputs/apk/debug/app-debug.apk
 
 ## 진행 현황
 
+2.0 후보 목록·종목별 근거/위험 조회 API는 [사용 안내](docs/KSTOCK_V2_CANDIDATE_API.md)를 참고하세요. 로컬 입력 파일에 선택적 OpenDART 지분공시·버크셔 SEC 13F·SEC Form 4 갱신을 연결했습니다. 전체 과거 공시·예약 수집·실서비스 검증은 남아 있습니다.
+
 v0.2:
 - [x] OpenDART 재무제표·공시 HTTP 어댑터
 - [x] 종목코드 ↔ DART corp_code 매핑 및 프로세스 내 캐시
@@ -170,3 +178,10 @@ v0.2:
 - [x] 해외증권시장 상장폐지와 진행 중 이의·우려 보고서의 거짓 양성 제거
 - [x] 종속회사 부도·회생 공시는 모회사 Hard Stop 대신 영향 검토 신호로 전달
 - [ ] 로컬 AI의 중요 공시·위험 판단을 사례별로 검토하고 품질 기준 보강
+
+
+### 자동 연구와 간결한 화면
+
+홈은 실제 사건 수·예측 신호 검증 상태·최근 시장 반응·Mac mini 실행 일정을 보여줍니다. 투자 신호·인물·연구 결과는 별도 화면이며 공식 근거와 한계는 상세에서 확인합니다. Web과 기존 Android WebView는 `/api/v2/research/dashboard`를 공유합니다. 기존30분 Worker가 저장된 공식 근거를10단계로 재검증하고 상태와 근거 QA를 저장합니다. 비활성 외부 수집은 그대로 유지합니다. 자동 근거 QA는 회귀 테스트 실행과 구분됩니다. Apple2·Microsoft1은 보수적인 가격 반응 관측으로, 추천·예측 신호 검증·실거래는 보류 상태입니다. 현재 검증과 한계는 `docs/KSTOCK_QA_FOLLOWUP_REPORT.md`를 참조하세요.
+
+승인된 공식 자료 자동 수집은 기존 Collection Worker와30분 Peer Scheduler에 연결했습니다. SEC·OpenDART·KIS·기존 Microsoft IR은 일별, 연준 RSS는6시간별 수집 기한을 확인합니다. KRX는 인증 차단, 미연결 KIND·정부 경로는 비활성입니다. 정책은 인증정보 없는 `data/v2/data-collection/research-policy.json`에 보존하며 명시적 `KSTOCK_RESEARCH_COLLECTION_ENABLED=false`로 비활성화할 수 있습니다. 로컬 Qwen 해석은 공식 사실과 구분합니다. 새 공시 메타데이터나 발언이 곧 검증된 투자 신호를 의미하지 않습니다. 범위와 제한은 `docs/KSTOCK_AUTONOMOUS_SOURCE_POLICY.md`를 확인하세요.
