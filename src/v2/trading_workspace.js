@@ -47,7 +47,7 @@ export function validWorkspaceSnapshot(value,id,at){
 export function workspaceScenario(snapshot,instrument,asOf,holding=null){
  const review=reviewTradingData(snapshot,instrument,asOf);
  const scenario=evaluateSwing({bars:snapshot.bars,asOf,holding,completedSessionDate:review.calendar.status==='PUBLISHED_SCHEDULE'&&!review.issues.length?review.calendar.date:null});
- if(review.issues.length)return {...scenario,action:'DATA_UNAVAILABLE',reason:review.issues[0],entry:null,stop:null,target:null,metrics:null,validUntil:null};
+ if(review.issues.length)return {...scenario,action:'DATA_UNAVAILABLE',checks:null,reason:review.issues[0],entry:null,stop:null,target:null,metrics:null,validUntil:null};
  return scenario;
 }
 export function createTradingWorkspace({env=process.env,request=env.KSTOCK_MARKET_GATEWAY_ENABLED==='true'?createMarketGatewayRequest():createKisRequest({appKey:env.KIS_APP_KEY,appSecret:env.KIS_APP_SECRET,environment:env.KIS_ENV||'paper'}),directory='data/v2/trading-workspace',now=()=>Date.now(),loadEvents=async()=>[]}={}){

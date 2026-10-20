@@ -13,6 +13,9 @@
   check('krUsCurrencySeparated',kr.instrument.currency==='KRW'&&us.instrument.currency==='USD');check('ruleSimulationNotRecommendation',kr.strategy.policy.mode==='RULE_SIMULATION'&&kr.recommendationStatus==='HOLD'&&kr.orderExecution===false);
   const holding=await candidateRequest('/api/v2/trading/holding-review',true,{method:'POST',body:{market:'KR',symbol:'005930',holding:{averageCost:kr.quote.close,quantity:1}}});check('holdingReviewNoExecution',holding.strategy.holdingContext==='USER_ENTERED'&&holding.orderExecution===false);
   location.hash='trading-today';applyResearchScreen();for(let n=0;n<100&&!document.querySelector('#trading-home-detail .trading-price');n++)await new Promise(r=>setTimeout(r,100));check('newTradingHomeVisible',document.getElementById('trading-today').classList.contains('screen-active')&&!!document.querySelector('#trading-home-detail .trading-price'));
+  check('candidateDiagnosticsVisible',!!document.querySelector('#trading-opportunities .trading-diagnosis'));
+  check('detailNotesAtLeast15px',Array.from(document.querySelectorAll('#trading-home-detail .trading-note')).length>0&&Array.from(document.querySelectorAll('#trading-home-detail .trading-note')).every(n=>parseFloat(getComputedStyle(n).fontSize)>=15));
+  check('mobileHomeNoOverflow',document.documentElement.scrollWidth<=innerWidth);
   if(window.KStockTradingStorage){
    const store=window.KStockTradingStorage;let denied=false;try{await store.getItem('kstock-auth-token');}catch{denied=true;}check('nativeStorageCannotReadCredentialKeys',denied);
    let invalid=false;try{await store.setItem('kstock-trading-watch-v1',JSON.stringify([{market:'KR',symbol:'005930',exchange:'KRX',currency:'KRW',name:'QA',secret:'reject'}]));}catch{invalid=true;}check('nativeStorageRejectsExtraFields',invalid);
