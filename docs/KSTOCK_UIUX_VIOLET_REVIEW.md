@@ -21,3 +21,5 @@
 ## 실제 기기 검토 후 추가 보정
 
 Galaxy의 시스템 여백을 native root에 적용한 뒤 WebView로 다시 전달해 하단 여백이 중복되는 점을 보정했다(API30이상에서 root가 적용 후 WindowInsets.CONSUMED 반환). 모바일 소개 영역을 더 줄이고 처음사용안내를 요약수치 아래로 옮겼다. 변경된 홈은7폭·양테마·확대21조합 PASS (`workspace-design-home-final/report.json`). 초기217전체검사/9개데스크톱 보정/21개홈 보정은 서로 다른 실행이며 단일247개 고유조합으로 표현하지 않는다.
+
+최종 운영 후보 review-b543c85fff215010/제품커밋6a5473c. 원격27·전환후13·공개HTTPS PASS. 실제 Android16/iPhone17 기능검증 PASS, Android 실제 최종홈에서 하단여백/요약우선배치를 시각확인했다. 기기인증·사용자데이터 보존. 수동스크린리더 전체검토는 미실행이다. 최종실화면은 `data/v2/verification/workspace-design/android-physical-home-final.png`에 보존했다.

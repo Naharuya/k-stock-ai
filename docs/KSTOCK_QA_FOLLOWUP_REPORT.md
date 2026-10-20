@@ -1,3 +1,12 @@
+# 5번 디자인 최종 운영·실제 기기 확인 — 2026-10-20 KST
+
+- 최종 제품 커밋6a5473c/후보review-b543c85fff215010(169파일, SHA be6702fdea1594d42d3b796ef0bd0792d802749fc379424d245fd0db8d4346b5)로 운영 반영. 원격27검증 및 전환후13검증/공개HTTPS PASS. 환경파일/current/data/기존인증 보존, 이전unit백업, 롤백미실행, 실거래OFF/HOLD 유지. violet-design-final-stage/runtime/activation/public-https-20261020.json.
+- 실제 Galaxy A33 최종 Android2.6.8(268) 동일서명업데이트 후16개기능검증 PASS, iPhone15 iOS0.1.4(5) 동일ID/기존서명업데이트 후17개 PASS. 인증·연구·가상기록·PENDING·복원·가로넘침 확인. 검증기록은비우고 Android디버깅포워드제거/양앱일반모드복귀. native안전영역중복을줄인 최종실기기캡처 android-physical-home-final.png로 시각확인. 요약수치가 안내보다앞에표시되고 하단중복여백해소. iPhone시각전체·수동VoiceOver/TalkBack전체검토를 완료로 표현하지 않는다.
+- iPhone결과파일 초기복사는 자동검토가 민감정보가능성으로거부해 실행되지않음. signed빌드의LiveWorkflow.js해시와 생성코드(status/불리언checks/time만 포함)를 확인·입증 후 결과파일1개 제한복사 승인. 토큰/사용자원장/전체컨테이너조회 없음. violet-design-final-ios-physical-20261020.json 및 Android동명영수증.
+- 전체941/Android4 PASS (master-qa-20261020013047268.json). 전체반응형217 PASS 후 데스크톱홈영향9 및 최종홈밀도21 재검증 PASS, 메뉴29 PASS. 같은조합재검증을 고유테스트수로합산하지않는다. WCAG자동태그위반0/가로넘침0이며 접근성인증아님. source code/Git/secret검사완료, 제품커밋push됨. 원천금융자료검증/정식스토어제출/최종개인정보고지는별도미완료.
+
+---
+
 # 5번 시안 기반 반응형 UI/UX 재구성 — 2026-10-20 KST
 
 - 사용자 제공 ARVIA5번의 보라/라벤더/빛·여백을 참고해 KSTOCK 자체 SVG표식, 세리프제목, 네이비본문과 연구우선 홈을 구성. 외부 이미지·웹폰트 추가 없음. CSS디자인 토큰을 별도정리하고 라이트/다크·모바일/태블릿/데스크톱 대응. 모바일 정상웹화면의 Android샘플버튼 숨김, 양OS연결도구모음 축소. 로컬Mac필수라는 오래된 문구 수정.
