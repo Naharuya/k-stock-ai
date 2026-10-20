@@ -11,7 +11,9 @@ final class AppDelegate: UIResponder, UIApplicationDelegate,UNUserNotificationCe
     static var openMoversRequested=false
     func userNotificationCenter(_ center:UNUserNotificationCenter,willPresent notification:UNNotification,withCompletionHandler completionHandler:@escaping(UNNotificationPresentationOptions)->Void){completionHandler([.banner,.list,.sound])}
     func userNotificationCenter(_ center:UNUserNotificationCenter,didReceive response:UNNotificationResponse,withCompletionHandler completionHandler:@escaping()->Void){
+        #if KSTOCK_HTTPS_PREVIEW
         if response.notification.request.content.userInfo["kstock-route"] as? String=="market-movers"{Self.openMoversRequested=true;DispatchQueue.main.async{for scene in UIApplication.shared.connectedScenes{if let windowScene=scene as? UIWindowScene,let controller=windowScene.windows.first(where:{$0.isKeyWindow})?.rootViewController as? ResearchController{controller.openMarketMoversIfRequested()}}}}
+        #endif
         completionHandler()
     }
     func application(_ application:UIApplication,didFinishLaunchingWithOptions options:[UIApplication.LaunchOptionsKey:Any]?=nil)->Bool {
