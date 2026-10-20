@@ -19,7 +19,7 @@ try{
    const snapshotId=createHash('sha256').update(JSON.stringify(universe.sources)).digest('hex');
    const same=previous?.snapshotId===snapshotId,cursor=same?previous.nextCursor||0:0,attempted=same?previous.attemptedSymbols||[]:[];
    const service=createTradingWorkspace({directory});
-   const plan=tradingRefreshPlan(universe.items,same?previous.queueCursors:{});const candidates=plan.items;let nextCursor=cursor;const queueCursors={...(same?previous.queueCursors:{} )};
+   const plan=tradingRefreshPlan(universe.items,previous?.queueCursors||{});const candidates=plan.items;let nextCursor=cursor;const queueCursors={...(previous?.queueCursors||{})};
    const results=[];let requests=0;
    // Persist the budget before any network request; interrupted cycles do not silently retry.
    const initial={schemaVersion:1,startedAt:new Date(at).toISOString(),status:'RUNNING',snapshotId,queueCursors,nextCursor:cursor,attemptedSymbols:attempted};await fs.writeFile(stateFile,JSON.stringify(initial),{mode:0o600});
