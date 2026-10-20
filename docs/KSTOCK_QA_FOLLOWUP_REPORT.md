@@ -1,3 +1,15 @@
+# 마무리: 커밋·운영 반영 및 실제 기기 확인 — 2026-10-20 KST
+
+- 제품 ec6ab6fad4c16da6b74476bd4399e9725a0d12e7 커밋·작업 브랜치 push 완료. 커밋 일치169파일 후보 review-ccc0cc13d582097f, archive SHA256 8f4751db5efcd05f63ac7fe09ad19058e04b805eda8a91c77304f7bca6e2e74a.
+- 최초 root 격리 설치 때문에 0600 후보 파일을 서비스 사용자 ubuntu가 읽지 못해 시작 실패(EACCES), 자동 롤백 실행. 기존 서비스active/환경·데이터 보존. 실패를 완료로 처리하지 않고 finalize-activation-20261020.json에 보존했다.
+- 새 후보의 소유권만 ubuntu로 수정(심볼릭 링크 대상 데이터 소유권 변경 없음), 실제 ubuntu 사용자로 격리27검사 재통과. 전환 스크립트에 서비스 사용자 읽기권한 사전검사와 동일 데이터 링크 재시도 검증 추가. 재전환 후13검사 PASS/서비스active/환경보존. finalize-runtime-service-user-20261020.json 및 finalize-activation-retry-20261020.json. 두 번째 시도 롤백 없음.
+- 공개HTTPS 신규홈·JS·작업보고 및 익명API401 PASS: finalize-public-https-20261020.json.
+- 실제 Galaxy A33 운영인증·저장연구·합성모의기록16 PASS; 홈 통계/추천보류링크/보고일치/가로넘침 추가5 PASS. 실제 iPhone15 운영 흐름17 PASS. finalize-android-physical/home-20261020.json, finalize-ios-physical-20261020.json. 기존 앱·서명·인증 그대로 사용, 앱 재설치 없음. 합성기록정리 확인 후 Android디버깅포워드 제거·양기기 QA플래그 없는 일반실행 복귀.
+- 전체946/Android계약4 및 브라우저27 최종PASS는 이전 후보검증 기록 참조. 이번 제품변경 이후 추가 변경은 전환 도구·기록뿐. 운영 원천자료 확보·국내전수검증·맥미니 실행복구·정식스토어출시는 미완료. 서버 작업보고는 서버에 게시된 자료이며 로컬 JINI 시간별 결과 자동 동기화 아님. 추천HOLD/실거래OFF 유지.
+- 에이전트 생성 tests/diff 예제2개는 사용자 작업 보존을 위해 삭제하지 않았으며 제품 커밋·배포에서 제외했다.
+
+---
+
 # 미반영 변경 출시 후보 검증 — 2026-10-20 KST
 
 - 기존 사용자·에이전트 변경 보존. 에이전트 tests/diff 예제는 제품에서 제외하고 로컬 보존. 덮어써졌던 이전 에이전트 보고 원문도 현재 검토와 구분해 복원 보존했다.

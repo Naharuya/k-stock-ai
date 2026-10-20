@@ -17,10 +17,18 @@ for line in environment.read_text().splitlines():
   k,v=line.split('=',1);words=shlex.split(v);values[k.strip()]=words[0] if words else ''
 assert len(values.get('KSTOCK_EXTERNAL_ACCESS_TOKEN',''))>=32 and values.get('KSTOCK_EXTERNAL_ACCESS_ENABLED')=='true'
 assert all(values.get(k,'false')=='false' for k in ['KSTOCK_BROKER_ENABLED','KSTOCK_LIVE_TRADING_ENABLED','KSTOCK_RESEARCH_COLLECTION_ENABLED','KSTOCK_PEER_WORKER_ENABLED'])
+# Check the actual service user's access before changing any unit or data link.
+service_user=run('systemctl','show','k-stock-ai','--value','--property=User')
+assert service_user and service_user!='root'
+for row in manifest['files']:
+ run('sudo','-u',service_user,'test','-r',str(stage/row['path']))
 before=sha(environment);data=base/'current/data';assert data.is_dir()
-if (stage/'data').exists():
- assert not (stage/'data').is_symlink() and not any((stage/'data').iterdir());(stage/'data').rename(stage/'empty-review-data-preserved')
-(stage/'data').symlink_to(data,target_is_directory=True)
+if (stage/'data').is_symlink():
+ assert (stage/'data').resolve()==data.resolve()
+else:
+ if (stage/'data').exists():
+  assert not any((stage/'data').iterdir());(stage/'data').rename(stage/'empty-review-data-preserved')
+ (stage/'data').symlink_to(data,target_is_directory=True)
 (stage/'activation-previous-unit.conf').write_bytes(oldunit)
 def request(route,body=None,auth=False):
  headers={'Authorization':'Bearer '+values['KSTOCK_EXTERNAL_ACCESS_TOKEN']} if auth else {}

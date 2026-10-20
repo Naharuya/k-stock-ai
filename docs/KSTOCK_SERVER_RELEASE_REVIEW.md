@@ -46,3 +46,8 @@
 ## 사용자 승인 운영 전환 완료 — 2026-10-20
 
 KSTOCK 서비스 재시작 명시 승인 후 review-e0dd69f0bd83fd13으로 ExecStart 전환·서비스 재시작 완료. 기존 current와 환경파일 보존, 영구 데이터는 current/data 연결. 서비스active, 재시작 후11개 확인·공개HTTPS 앱자산·iOS시뮬레이터 HTTPS WebView PASS. 롤백 미실행. 실제물리기기/최종출시/금융자료 검증은 별도 미완료이며 실거래OFF 유지. server-menu-activation-20261020.json 참조. 이전 NOT ACTIVE 기록은 당시 상태다.
+
+
+## 후보 파일 소유권 사전검사 — 2026-10-20
+
+review-ccc0cc13d582097f 최초 전환은 root 소유0600 소스 접근 오류로 자동 롤백됐다. 새 후보만 서비스 계정 소유로 바로잡은 뒤 실제 서비스 계정 격리검증과 재전환을 통과했다. 앞으로 stage-server-review.py는 서비스 사용자 ubuntu로 실행하고, 활성화 전에 실제 서비스 사용자의 manifest 파일 읽기 가능 여부를 검사한다. root 격리검증 통과만으로 서비스 실행 가능으로 판단하지 않는다. 데이터 링크가 이미 있으면 같은 persistent 경로인지 검증한 뒤 재시도하며 임의 다른 링크는 거부한다.
