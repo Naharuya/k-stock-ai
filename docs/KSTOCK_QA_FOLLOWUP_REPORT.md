@@ -1,3 +1,47 @@
+# 화면 꺼짐 시장 알림·급상승/급하락 TOP10 — 2026-10-20 KST
+
+사용자의 화면 꺼짐 알림/20종목 동시 비교 요청에 따라 웹·네이티브 코드를 구현·커밋·푸시하고 운영 및 기존 실기기 앱에 반영했다. 메뉴의 **급상승·급하락 TOP10**에서 국내/미국을 선택하면 상승10·하락10을 같은 페이지의 두 열로 본다. 작은 화면·큰 글자에서는 세로 스크롤을 사용하며 모든20행이 반드시 한 뷰포트에 들어간다고 보장하지 않는다. 종목 행을 누르면 기존 일봉·매매조건 상세로 이동한다.
+
+## 실제 설정·동작
+
+- 국내는 KRX, 미국은 NAS/NYS/AMS의 공급자 등락률 순위 첫 페이지를 합산한다. **전일 대비 등락률**이며 기존 일부 일봉을 전시장 급등락 순위로 가장하지 않는다. 방향별10개 미만이면 실제 수만 표시하고 임의로 채우지 않는다. 종목/거래소/부호/유한 양수가격/거래량/중복/원천해시 확인, 표시 필드만 전달. 최대10분 캐시·수신시각·미제공 호가시각/실시간 보장 없음 표시. 숫자 줄바꿈을 막고 작은 화면의 정확한 가격은 접근성 이름·상세에서도 확인 가능.
+- 읽기 전용 원천은 [KIS 국내 등락률 순위](https://github.com/koreainvestment/open-trading-api/tree/main/examples_llm/domestic_stock/fluctuation)와 [해외 상승률/하락률](https://github.com/koreainvestment/open-trading-api/tree/main/examples_llm/overseas_stock/updown_rate)다. 기존 Mac mini 루프백 게이트웨이의 한정된2개 순위 작업만 추가했다. 계좌/주문/금융키/사용자 보유는 전달하지 않으며 기존120회/시간 제한·간격을 공유한다. 두 시장 갱신은 병합·직렬화하고 실패/오래된 자료는 현재 순위 또는 알림으로 처리하지 않는다.
+- **Android 시장 알림 켜짐**, 기본 상승+5%/하락-5%,1~30%와 방향 설정 가능. POST_NOTIFICATIONS 실제 OS허용 후 JobScheduler264 예약. 화면 OFF 상태에서 OS작업을 강제 시험 실행하여 실제 KSTOCK264 알림 게시를 확인했다. AOD Dozing을 단순 Asleep 검사만으로 판단한 최초 검사는 false였으나 기본 물리 디스플레이 OFF와 알림 게시를 별도로 재확인했다. 이는 **자연 예약시각/절전 지연을 입증한 검사가 아니다**. 일반실행 복원 후 작업waiting 확인.
+- **iPhone 시장 알림 켜짐**, 사용자가 직접 OS권한 허용 완료를 회신했다. 기기에서 authorization2/threshold5/enabled true/scheduled true/state CHECKED를 회수했다. 실제 인증 순위 조회 성공이며, 자연 백그라운드 실행/화면 잠김 상태의 실제 도착 시각은 미확인이다. BGAppRefreshTask를 사용한다. [Apple의 earliestBeginDate 설명](https://developer.apple.com/documentation/backgroundtasks/bgtaskrequest/earliestbegindate)처럼 요청 시각의 실행을 보장하지 않는다. [Android 백그라운드 작업 정책](https://developer.android.com/develop/background-work/background-tasks)에도 OS 실행 제한이 있다.
+- 이 기능은 **시장 TOP10 급등락 기준 로컬 OS알림**이다. 기존 관심·직접입력보유의 전략조건 화면알림과 구분한다. APNs/FCM·서버푸시/웹브라우저 백그라운드 알림을 제공한다고 표시하지 않는다. 최소15분 예약 요청, OS절전/강제종료/연결에 따라 지연 또는 미실행 가능. 같은 종목·방향1시간 중복 방지,최대40개 기록,끄기·기록삭제 제공. 시간 경과 정리는 다음 조회 때 수행하도록 구현했다. 이 보존/삭제 전체의 장기 실기기 검증까지 완료했다는 뜻은 아니다.
+- iOS가 잠긴 동안 인증 조회할 수 있도록 **사용자가 켤 때만** 별도 기기 전용 AfterFirstUnlockThisDeviceOnly Keychain 사본을 저장한다. 기존 인증의 WhenUnlockedThisDeviceOnly 보호 유지. 끄기·인증삭제 시 예약/사본/중복기록 제거,인증 갱신 시 활성화된 사본만 갱신. Android는 기존 Keystore암호화 인증 사용. 알림 본문은 종목 수 요약이며 보유금액/인증값 없음. 새 장치등록/서버푸시토큰 저장·외부알림업체 없음. 개인정보/출시 데이터 목록·기획7-4와 실제 흐름을 일치시켰으며 최종 스토어/보유기간 검증Gate는 유지한다.
+
+## 수정 중 발견한 경계와 검증
+
+처음 운영 실기기 검사에서 순위 갱신과 일봉 조회가 겹치면 24시간 이내의 유효한 저장자료까지 UNAVAILABLE로 내려가 holding context 검사에 실패했다. 실패영수증 android-initial-physical.json을 보존했다. cooldown에서는 검증된 저장자료만 STORED_OBSERVATION으로 제공하되 최근세션/기업행동·가격 급변 차단은 우회하지 않도록 수정했고 회귀 및 물리검사를 재통과했다. 재생·추천HOLD/실주문OFF 유지. 백그라운드 첫 조회가 오래된 캐시만 반복해서 받지 않도록 ALL시장 갱신 후 제한된 재확인 루프를 추가했다. 갱신 중 들어온 가격의 시각을 작업 시작시각으로 잘못 제외하지 않도록 현재시각 기준으로 수정했다.
+
+검증 자료는 data/v2/verification/market-movers-release 아래(별도 표기 제외)다.
+
+| 범위 | 실제 결과 |
+| --- | --- |
+| 전체 오프라인 / Android 통신계약 | **997 / 4 PASS** (/tmp/kstock-movers-final-offline.log, android-contract.log) |
+| 순위 전용 테스트 |5 PASS. 공급자 파라미터 고정/범위 거부·원문 필드 제거·부호/거래소·병합/캐시·실패백오프·ALL시장 분리 |
+| 실제 제한 공급자 조회 | 국내2방향·미국NAS2방향 성공, 이후3거래소 합산 각10개 확인. market-movers-provider-smoke.json / market-movers-aggregate-smoke.json |
+| 새 화면 브라우저 | **18 PASS** (movers-ui/report.json),320/390/1440에서20행·미국통화·인증오류 초기화·넘침·런타임. 합성 API를 명시 사용 |
+| 기존 매매 브라우저 흐름 | **33 PASS**,trading-ui/workflow.json. 실제시세 검증과 구분 |
+| 최종 반응형·테마·접근성 | **21 PASS**,workspace-movers-final/report.json |
+| 최종 운영 후보 격리/전환 후 | **37 / 21 PASS**,compact-isolated.json / compact-activation.json |
+| 최종 실제 운영 순위 | **국내10+10 / 미국10+10 PASS**,compact-live.json. 수신2026-10-20T10:33~34Z,providerQuoteTime null 명시 |
+| 실기기 기반 흐름 | **Android23 / iPhone28 PASS**,final-android-physical.json / final-ios-physical.json. cooldown수정후 통과,이후 화면 밀도 수정은 별도 아래검사 |
+| 최종 Android 실제 순위 화면 | **3 PASS**,android-movers-ui.json. 국내20·미국20·넘침없음. 캡처 android-market-movers.png는 이전저장자료 표시가 있는 갱신중 장면이며 최신호가 증명이 아님 |
+| 화면 OFF Android 알림 게시 | **PASS**,android-screen-off-result.json. 기본물리패널OFF·ID264게시,강제시험범위 명시. android-restored-job-state.json은 일반실행후waiting |
+| iOS권한·예약·실제 인증조회 | **확인**,ios-final-alert-state.json. 자연 잠금화면 도착까지 확인했다고 하지 않음 |
+| iOS빌드 | 기존프로필 HTTPS기기 및 일반시뮬레이터 빌드·서명 검증 성공. 알림탭은 고정 급등락 화면으로 연결 |
+| 공개HTTPS·무인증차단 | PASS,public.json;기존 /api 인증유지 |
+
+## 배포와 보존
+
+최종 서버 후보 **review-b7fc9a7e5155d5ac**,소스303da74,181파일,archive SHA256 aac2627fa41015cd5116b830675b956a460e8a84685e02f7e1ca644334af46cc. 최종전 후보74bfee 및e893의 검증·수정 이력도 보존. 기존 환경/사용자데이터/복원 경로 유지. 제품/네이티브/화면 코드 모두 origin/auto/kstock-development-20260930 푸시. Android2.7.0(270)/iOS0.1.6(7) 동일ID·기존서명 업데이트,삭제/초기화 없음. 양기기 일반실행으로 복원하고 Android디버그forward제거. 사용자 허용 설정을 유지했으며 기존사용자/에이전트 backend문서·continuous문서·tests/diff 변경은 커밋에서 제외했다.
+
+금융자료 독립대사·전수검증·장기전략실증·재배포권리·스토어출시 Gate는 미완료이며 이번 알림 설정/기능구현 완료와 구분한다.
+
+---
+
 # 후속6항목 개발·운영·실기기 확인 — 2026-10-20 KST
 
 사용자6번까지 진행 승인에 따라 아래 기능을 구현·푸시·운영 반영했다. 기능 코드와 실제 금융 검증/장기 관측/플랫폼 푸시 범위를 구분하며, 모든 시장 검증이 끝났다는 의미가 아니다.
