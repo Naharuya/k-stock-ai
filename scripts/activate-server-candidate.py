@@ -55,6 +55,9 @@ try:
  if (stage/'public/trading-workspace.js').is_file():
   for route,marker in [('/trading-workspace.js','BUY_CONDITION_MET'),('/trading-tools.js','createAlertTracker'),('/market-movers.js','movers-status'),('/trading-workspace.css','.trading-card')]:
    code,_,body=request(route);assert code==200 and marker in body;checks.append('trading_asset:'+route)
+  code,_,body=request('/market-news.js');assert code==200 and 'kstock-news-updated' in body;checks.append('news_asset')
+  assert request('/api/v2/trading/news')[0]==401;checks.append('news_anonymous_401')
+  code,_,body=request('/api/v2/trading/news',auth=True);news=json.loads(body);assert code==200 and news.get('schedulerEnabled') is True and news.get('orderExecution') is False;checks.append('news_scheduler_enabled')
   assert request('/api/v2/trading/instruments')[0]==401;checks.append('trading_anonymous_401')
   code,_,body=request('/api/v2/trading/instruments?market=KR',auth=True);catalog=json.loads(body);assert code==200 and catalog['universeSecurities']>0;checks.append('trading_catalog_available')
   code,_,body=request('/api/v2/trading/opportunities?market=KR',auth=True);opportunities=json.loads(body);assert code==200 and opportunities.get('recommendationStatus')=='HOLD';checks.append('trading_conditions_not_recommendation')

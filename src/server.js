@@ -1,3 +1,4 @@
+import {createNewsDigest,registerNewsDigest} from './v2/news_digest.js';
 import {createMarketMovers,registerMarketMovers} from './v2/market_movers.js';
 import {createTradingWorkspace,registerTradingWorkspace} from './v2/trading_workspace.js';
 import {registerBackendResearchProgress} from './v2/backend_research_progress.js';
@@ -94,6 +95,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/api", requireExternalAuth);
+const newsDigest=createNewsDigest({directory:path.join(projectDirectory,"data/v2/news-digest")});registerNewsDigest(app,newsDigest);newsDigest.start();
 registerMarketMovers(app,createMarketMovers({directory:path.join(projectDirectory,'data/v2/trading-workspace')}));
 registerTradingWorkspace(app,createTradingWorkspace({directory:path.join(projectDirectory,"data/v2/trading-workspace"),loadEvents:async()=>{const r=await influenceService.load();return r.capitalEvents||[];}}));
 registerBackendResearchProgress(app,path.join(projectDirectory,"data/v2/research-progress.json"));

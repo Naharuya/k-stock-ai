@@ -19,6 +19,7 @@
   const summaryKr=publicSummary.items.find(d=>d.instrument.market==='KR');
   const localExit=window.KStockTradingTools.holdingExitSummary({...summaryKr.instrument,averageCost:kr.quote.close,quantity:1},summaryKr);
   check('holdingExitCalculatedOnDevice',['EXIT_CONDITION_MET','REDUCE_CONDITION_MET','RISK_REVIEW','HOLD_CONDITION_MET'].includes(localExit.action));
+  const news=await candidateRequest('/api/v2/trading/news');check('newsDigestReadOnly',news.success===true&&Array.isArray(news.items)&&news.orderExecution===false&&news.schedulerEnabled===true);
   check('candidateDiagnosticsVisible',!!document.querySelector('#trading-opportunities .trading-diagnosis'));
   check('detailNotesAtLeast15px',Array.from(document.querySelectorAll('#trading-home-detail .trading-note')).length>0&&Array.from(document.querySelectorAll('#trading-home-detail .trading-note')).every(n=>parseFloat(getComputedStyle(n).fontSize)>=15));
   check('mobileHomeNoOverflow',document.documentElement.scrollWidth<=innerWidth);

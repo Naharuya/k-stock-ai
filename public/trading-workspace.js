@@ -57,16 +57,18 @@
   }catch(e){if(generation!==holdingGeneration)return;if(e.message==='AUTH')$('trading-holding-review').replaceChildren(node('p',errorText(e),'trading-error'));holdingResults.clear();for(const panel of holdingPanels.values()){panel.dataset.action='DATA_UNAVAILABLE';panel.replaceChildren(node('p','판단 보류','holding-exit-state'),node('p',errorText(e),'trading-note'));}}
   finally{clearTimeout(timer);if(generation===holdingGeneration){holdingBusy=false;holdingController=null;}}
  }
+ function renderHoldingNews(){for(const h of holdings){const panel=holdingPanels.get(key(h))?.parentElement?.querySelector('.holding-news');if(!panel)continue;panel.replaceChildren(node('h4','종목명 직접 언급 뉴스'));const state=window.KStockNews?.snapshot();if(!state){panel.append(node('p',window.KStockNews?.failed()?'뉴스 조회 실패 · 전체 뉴스에서 연결 상태를 확인하세요.':'뉴스 정리 결과를 확인 중입니다.','trading-note'));continue;}const matches=(state.items||[]).filter(r=>(r.instruments||[]).some(i=>key(i)===key(h))).slice(0,3);if(state.stale)panel.append(node('p','뉴스 수집 지연 · 이전 정리 결과입니다.','trading-note'));if(!matches.length)panel.append(node('p','현재 수집 범위에서 직접 언급된 뉴스가 없습니다. 관련 보도가 없다는 뜻은 아닙니다.','trading-note'));for(const r of matches){const a=node('a',r.title);a.href=r.url;a.target='_blank';a.rel='noopener noreferrer';panel.append(a,node('p',`${r.sourceName} · 공개 ${instant(r.publishedAt)} · 실제 사건일 미확인`,'trading-note'));}const link=node('a','전체 뉴스·수집 출처 보기');link.href='#market-news';panel.append(link);}}
+ window.addEventListener('kstock-news-updated',renderHoldingNews);
  function renderHoldings(){
   cancelHoldingSummaries();holdingResults.clear();holdingPanels.clear();
   const target=$('trading-holding-list');target.replaceChildren();
   if(!holdings.length)target.append(node('p','직접 입력한 보유종목이 없습니다.'));
   for(const h of holdings){
    const row=node('article',undefined,'trading-holding-row');row.append(node('h3',`${h.name||h.symbol} · ${h.symbol}`),node('p',`${h.market==='KR'?'국내':'미국'} · ${h.exchange} · ${h.quantity}주 · 평균 ${money(h.averageCost,h.currency)} · 직접 입력`));
-   const panel=node('div',undefined,'holding-exit-summary');panel.setAttribute('aria-live','polite');panel.append(node('p','보유종목 화면에서 종가 기준 매도 조건을 확인합니다.'));holdingPanels.set(key(h),panel);row.append(panel);
+   const panel=node('div',undefined,'holding-exit-summary');panel.setAttribute('aria-live','polite');panel.append(node('p','보유종목 화면에서 종가 기준 매도 조건을 확인합니다.'));holdingPanels.set(key(h),panel);row.append(panel,node('div',undefined,'holding-news'));
    const actions=node('div',undefined,'trading-actions');actions.append(button('유지·청산 조건 확인',()=>reviewHolding(h)),button('수정',()=>{for(const [id,v]of [['market',h.market],['symbol',h.symbol],['exchange',h.exchange],['quantity',h.quantity],['cost',h.averageCost]])$('trading-holding-'+id).value=v;$('trading-holding-symbol').focus();}),button('삭제',()=>{holdings=holdings.filter(x=>key(x)!==key(h));$('trading-holding-review').replaceChildren();saveHoldings();}));row.append(actions);target.append(row);
   }
-  refreshHoldingSummaries();
+  refreshHoldingSummaries();renderHoldingNews();
  }
  $('trading-holding-refresh').addEventListener('click',refreshHoldingSummaries);
  setInterval(()=>{if(location.hash==='#my-stocks'&&document.visibilityState==='visible')refreshHoldingSummaries();},180000);

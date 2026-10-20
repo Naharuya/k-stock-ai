@@ -1,0 +1,19 @@
+/* Shared public news metadata; holding matching happens only in the page. */
+(function(){
+ 'use strict';const $=id=>document.getElementById(id);if(!$('market-news'))return;
+ let value=null,failed=false,epoch=0,controller=null,last=0;
+ const instant=v=>Number.isFinite(Date.parse(v))?new Date(v).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}):'미확인';
+ const node=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
+ function safeLink(text){try{const u=new URL(text);return u.protocol==='https:'&&!u.username&&!u.password?u.href:null}catch{return null}}
+ function render(){
+  if(!value)return;const state=value.status==='FAILED'?'수집 실패':value.status==='PARTIAL'?'일부 출처 확인':value.status==='CHECKED'?'출처 확인 완료':'아직 확인하지 않음';
+  $('market-news-status').textContent=`${state} · 이번 새 자료 ${value.newItems??0}건 · 최근 시도 ${instant(value.checkedAt)} · 최근 성공 ${instant(value.lastSuccessfulAt)} · 다음 확인 예정 ${instant(value.nextCheckAt)} (한국 시간)${value.stale?' · 수집 지연/이전 자료':''}${value.schedulerEnabled===false?' · 자동 확인 꺼짐':''}`;
+  const sources=$('market-news-sources');sources.replaceChildren();sources.append(node('p','주제별 정리: '+Object.entries(value.topicCounts||{}).map(([tag,count])=>`${tag} ${count}건`).join(' · '),'news-source'));sources.append(node('p','제목 직접 언급 연결 범위: 삼성전자·SK하이닉스·Micron·AMD·NVIDIA·Meta. 업종 공통 뉴스는 특정 종목 거래로 연결하지 않습니다.','trading-note'));
+  for(const s of value.sources||[]){const labels={CHECKED:'확인',FETCH_FAILED:'조회 실패',ACCOUNT_CONFIGURATION_REQUIRED:'뉴스 검색 계정 설정 필요'};sources.append(node('p',`${s.name}: ${labels[s.status]||'미확인'} · ${s.items||0}건 · 마지막 성공 ${instant(s.lastSuccessfulAt)}`,'news-source'));}
+  const target=$('market-news-items');target.replaceChildren();
+  for(const r of value.items||[]){const url=safeLink(r.url);if(!url)continue;const card=node('article',undefined,'trading-card');const a=node('a',r.title);a.href=url;a.target='_blank';a.rel='noopener noreferrer';const heading=node('h3');heading.append(a);card.append(heading,node('p',`${r.sourceName} · 공개 ${instant(r.publishedAt)} (한국 시간)`,'trading-note'),node('p',(r.tags||[]).join(' · '),'news-tags'),node('p',r.instruments?.length?'제목 직접 언급: '+r.instruments.map(i=>`${i.name} (${i.symbol})`).join(', '):'직접 연결한 종목 없음 · 시장 공통 정보'),node('p','실제 사건·거래일 미확인 · 제목 키워드 분류 · 원문 사실 확인/매수·매도 신호가 아닙니다.','trading-note'));target.append(card);}
+  if(!target.children.length)target.append(node('p','현재 확인된 최근7일 자료가 없습니다. 수집 범위와 출처 상태를 확인하세요.'));
+ }
+ async function load(force=false){if(document.visibilityState!=='visible'||!['#market-news','#my-stocks'].includes(location.hash)||!force&&Date.now()-last<60000)return;const id=++epoch;controller?.abort();controller=new AbortController();const current=controller;const timer=setTimeout(()=>current.abort(),20000);try{const data=await candidateRequest('/api/v2/trading/news',true,{signal:controller.signal});if(id!==epoch)return;if(!Array.isArray(data.items)||data.items.length>200)throw Error();value=data;failed=false;last=Date.now();render();window.dispatchEvent(new Event('kstock-news-updated'));}catch(e){if(id!==epoch)return;value=null;failed=true;$('market-news-items').replaceChildren();$('market-news-sources').replaceChildren();$('market-news-status').textContent=e.message==='AUTH'?'인증 설정 후 다시 확인하세요.':'뉴스 정리 결과를 불러오지 못했습니다.';window.dispatchEvent(new Event('kstock-news-updated'));}finally{clearTimeout(timer);}}
+ window.KStockNews={snapshot:()=>value,failed:()=>failed,load};$('market-news-refresh').addEventListener('click',()=>load(true));window.addEventListener('hashchange',()=>load());window.addEventListener('kstock-data-ready',()=>load(true));document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')load();else{epoch++;controller?.abort();}});setInterval(()=>load(),60000);load();
+})();
