@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-import {programSummary,cyclePolicy,cycleRequest} from './macmini-program-policy.mjs';
+import {programSummary,cyclePolicy,cycleRequest,tradingCycleStatus} from './macmini-program-policy.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const directory=path.join(root,'data/v2/verification/macmini-hourly');
 const hold='/Users/ari/ARI/jini-agent/automation/KSTOCK_AUTO_HOLD';
@@ -43,7 +43,7 @@ function runTradingCycle(){
  if(!value)return {status:'BLOCKED',reason:'TRADING_CYCLE_RESULT_UNAVAILABLE',exitCode:task.status};
  const sync=spawnSync('/usr/bin/python3',[path.join(root,'scripts/sync-trading-data.py'),'--publish'],{cwd:root,env,encoding:'utf8',timeout:150000,maxBuffer:1000000});
  let synced;try{synced=JSON.parse(sync.stdout);}catch{}
- return {status:value.status,universeSecurities:value.universeSecurities??null,uniqueAttempted:value.uniqueAttempted??null,observed:value.observed??null,refreshAttempts:value.refreshAttempts??null,externalHttpRequests:value.externalHttpRequests??null,reason:value.reason||null,exitCode:task.status,publicMarketSync:sync.status===0&&synced?.published===true?'PUBLISHED':'FAILED',syncedFiles:synced?.files??null};
+ return {status:tradingCycleStatus({cycleStatus:value.status,cycleExitCode:task.status,syncExitCode:sync.status,published:synced?.published}),universeSecurities:value.universeSecurities??null,uniqueAttempted:value.uniqueAttempted??null,observed:value.observed??null,refreshAttempts:value.refreshAttempts??null,externalHttpRequests:value.externalHttpRequests??null,reason:value.reason||null,exitCode:task.status,publicMarketSync:sync.status===0&&synced?.published===true?'PUBLISHED':'FAILED',syncedFiles:synced?.files??null};
 }
 try{
  let report;

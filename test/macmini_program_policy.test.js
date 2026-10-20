@@ -28,3 +28,5 @@ test('dispatcher sends only the current gate to keep the local model task bounde
  const full='## C. pilot\nEDIT_ONE_FILE\n## D. sources\nCOLLECT_ALL\n## E. universe\nALL_MARKETS';
  const r=cycleRequest(full,{stage:'GATE1'},'REPAIR_EXECUTION');assert.match(r,/EDIT_ONE_FILE/);assert.doesNotMatch(r,/COLLECT_ALL|ALL_MARKETS/);assert.match(r,/REPAIR_EXECUTION/);assert.throws(()=>cycleRequest('missing',{stage:'GATE1'},'X'));
 });
+
+test('market sync failure cannot be hidden by skipped or successful collection',async()=>{const {tradingCycleStatus}=await import('../scripts/macmini-program-policy.mjs');for(const cycleStatus of ['SKIPPED','OBSERVATIONS_SAVED','PARTIAL']){assert.equal(tradingCycleStatus({cycleStatus,cycleExitCode:0,syncExitCode:1,published:false}),'BLOCKED');assert.equal(tradingCycleStatus({cycleStatus,cycleExitCode:0,syncExitCode:0,published:true}),cycleStatus);}assert.equal(tradingCycleStatus({cycleStatus:'OBSERVATIONS_SAVED',cycleExitCode:1,syncExitCode:0,published:true}),'BLOCKED');assert.equal(tradingCycleStatus({cycleStatus:'UNKNOWN',cycleExitCode:0,syncExitCode:0,published:true}),'BLOCKED');});
