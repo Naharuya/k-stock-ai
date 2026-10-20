@@ -77,7 +77,7 @@ export function createTradingWorkspace({env=process.env,request=env.KSTOCK_MARKE
   if(env.KSTOCK_DECISION_READ_ENABLED==='false')return finish(saved,'UNAVAILABLE','READ_DISABLED');
   if(env.KSTOCK_MARKET_GATEWAY_ENABLED!=='true'&&(!env.KIS_APP_KEY||!env.KIS_APP_SECRET))return saved&&at-Date.parse(saved.receivedAt)<86400000?finish(saved,'STORED_OBSERVATION','SERVER_USES_SYNCED_DAILY_CLOSE'):finish(saved,'UNAVAILABLE','PROVIDER_NOT_CONFIGURED');
   if(at-hourStart>=3600000){hourStart=at;hourRequests=0;}
-  if(inFlight||at<nextRequest||hourRequests>=120)return finish(saved,'UNAVAILABLE','PROVIDER_COOLDOWN');
+  if(inFlight||at<nextRequest||hourRequests>=120)return finish(saved,saved&&at-Date.parse(saved.receivedAt)<86400000?'STORED_OBSERVATION':'UNAVAILABLE','PROVIDER_COOLDOWN');
   inFlight=id;nextRequest=at+2000;hourRequests++;
   try{
    // Include today only after a conservative regular-close buffer; never use intraday bars.
