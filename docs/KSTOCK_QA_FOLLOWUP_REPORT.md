@@ -6,7 +6,7 @@
 
 Android 실제 뉴스 화면은 **4 PASS**: 공식 자료 카드 표시,일반 언론 계정 설정 대기 고지,가로 넘침 없음,수동 다시 보기가 서버30분 수집 주기를 강제로 바꾸지 않음. iPhone은 실제 뉴스 API 성공을 확인한 것으로,동일한 뉴스 화면의 별도 스크린샷/육안 검사를 했다고 확대하지 않는다. 증빙은 data/v2/verification/news-release/android-physical.json,ios-physical.json,android-news-ui.json,android-news.png,physical-status.json. 이전 미확인 상태는 physical-status-before-unlock.json으로 보존했다.
 
-운영 재확인 결과5건/공식3출처 확인/일반언론 미설정/PARTIAL/1800초 유지. 첫 수집21:47:47 KST,다음 예정22:17:47 KST이며 이번에도 자연적인 두 번째 실행을 관찰한 것은 아니다. production-after-unlock.json 참조. 양기기 일반 실행 복원 성공·Android 디버그forward 제거·기존 데이터/알림 설정 유지. 새 제품 코드/서버 전환 없이 검증 기록만 갱신했다. 일반 뉴스 계정 미등록과 장기/출시 Gate는 계속 미완료다.
+운영 재확인 결과5건/공식3출처 확인/일반언론 미설정/PARTIAL/1800초 유지. 첫 수집21:47:47 KST,다음 예정22:17:47 KST이며 이번에도 자연적인 두 번째 실행을 관찰한 것은 아니다. production-after-unlock.json 참조. 양기기 일반 실행 복원 성공·Android 디버그forward 제거·기존 데이터/알림 설정 유지. 일반 실행 복원 뒤 Android 앱의 알림 설정은 켜짐이지만 OS264 작업이 없는 불일치를 추가 관측했다. 설정창에서 기존 기준을 바꾸지 않고 알림을 다시 등록해 OS작업 waiting을 확인했다. 원인 및 강제종료 뒤 장기 자동복원까지 검증한 것은 아니다. 새 제품 코드/서버 전환 없이 검증 기록만 갱신했다. 일반 뉴스 계정 미등록과 장기/출시 Gate는 계속 미완료다.
 
 ---
 
