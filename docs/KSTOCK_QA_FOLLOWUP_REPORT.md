@@ -1,3 +1,17 @@
+# 과거 재생 비교·거래량 검증 및 시간별 보고 보강 — 2026-10-20 KST
+
+- 동일 종목 단순 보유 비교를 과거 모의 재생 API/화면에 추가했다. 전략과 동일한 평가기간(40일 준비구간 이후)·편도 수수료·매도세금·편도 슬리피지 가정을 적용하며 차이는 퍼센트포인트로 표시한다. 공식 지수/배당 포함 성과/별도 기간 검증이 아니다. 준비 일봉 수·평가 일봉 수와 독립 검증 false를 API에 명시했다.
+- 거래량0 일봉이 있으면 과거 체결을 가정하지 않고 ZERO_VOLUME_EXECUTION_UNCONFIRMED로 전체 재생을 보류한다. 초기·진입일·마지막일 거래량0과 비용/기간/차이 계산 테스트를 추가했다.
+- 시간별 수집이 SKIPPED여도 공개자료 동기화 실패를 상위 BLOCKED로 표시하도록 수정했다. 실제 상태 OBSERVATIONS_SAVED/SKIPPED/PARTIAL만 허용한다. 수집·동기화 성공과 보고 전달 성공은 분리한다.
+- 전체 오프라인979 PASS, 브라우저28 PASS(합성 API+로컬 실제 JSON 계약), 계산/보고정책13 PASS. 브라우저 첫 실행은 sandbox 바인딩 제한으로 실패하여 허용 실행에서 통과했다. 운영후 실제 Android 인증 HTTPS에서 삼성전자·Apple 각각60평가일봉의 동일기간 비교 계산 PASS. 검증 스크립트 최초 호출 인자 오류(GET 사용)를 수정한 후 POST 검사 통과; 제품 API 결함으로 확인된 것은 아니다. 기존 Android 운영 흐름23 PASS, 합성 기록 정리·일반실행 복원·디버그forward 제거. 이번 변경의 iPhone 물리 재검사는 미실행, 직전 버전28 PASS 기록과 구분한다.
+- 코드9f1dbac2ab20c851aefc3d8213d33002132052e1 푸시. 후보review-27d20cece836c244, archive SHA256 73733480203662aad9eb4dce5f42270e64a9f0353a01104883420235becbdbe3. 격리35/전환19 PASS, active·환경/데이터 보존. 증거 data/v2/verification/replay-reference-{isolated,activation,live}.json 및 trading-ui/workflow.json.
+- 맥미니 이번 주기 실제25종목 조회 성공, 누적고유시도42(전수9081완료 아님), 공개43파일 동기화 성공. 20261020091934915-trading-result.json의 최초 브리지전달 FAILED는 보존하고 재전달 성공을 replay-hourly-redelivery.json에 별도 기록했다. 앞선 실패 동기화도 재시도26파일 성공(최신 trading-sync 영수증). 자동 생성 문서의 주장만으로 구현 완료를 판단하지 않았다.
+- 전환 직후 추가 SSH 연결이 Connection refused로 실패했으나 공개HTTPS health200 및 Android 인증API는 정상. 추가 서버명령 대신 기기의 승인된 인증통로로 검증했다. SSH 신규 연결 원인은 미확정이며 서버 접근 경로의 별도 운영 점검 항목으로 남긴다. 기존 공개 서비스/사용자 자료를 변경하지 않았다.
+
+기존 미완료 시장 전수·거래일/기업행동 독립 대조·전략 실증·재배포 권리·스토어 Gate는 그대로 유지한다. 추천HOLD/실주문OFF.
+
+---
+
 # 수일~수주 매매 정보 개발·최종 운영 검증 — 2026-10-20 KST
 
 사용자 전체 진행 승인에 따라 기획 순서의 구현 가능한 개발·테스트·운영 반영을 수행했다. 커밋 `154a962f1bbcad8c45b7e38ddee2849dc866b6f1`을 origin/auto/kstock-development-20260930에 푸시하고, 175파일 후보 `review-f0a6ea71a74082d7`을 활성화했다. 배포 archive SHA256 `d1a9cf530b6389a229d847d065037fe4017c2f859bba4ee01ad0fc5f782aaa60`. 운영 서비스 active, 기존 환경파일·사용자 데이터 보존. 이전 후보와 복원 경로 유지.
