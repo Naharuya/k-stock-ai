@@ -1,3 +1,4 @@
+import {createMarketGatewayRequest} from './market_gateway.js';
 import {replaySwing} from './swing_replay.js';
 import {readFile,readdir,stat,mkdir,writeFile,rename} from 'node:fs/promises';
 import path from 'node:path';
@@ -35,7 +36,7 @@ export function parseWorkspaceHistory(response,instrument,{asOf,through}={}){
   seen.add(date);rows.push({date:`${date.slice(0,4)}-${date.slice(4,6)}-${date.slice(6,8)}`,open,high,low,close,volume});
  }
  rows.sort((a,b)=>a.date.localeCompare(b.date));if(!rows.length)throw Error('PROVIDER_HISTORY_EMPTY');
- return {bars:rows,receivedAt:asOf,priceAsOf:rows.at(-1).date,priceType:'PROVIDER_ADJUSTED_DAILY_CLOSE',source:'KIS',sourceHash:createHash('sha256').update(JSON.stringify(response)).digest('hex'),quality:'OBSERVED_NOT_INDEPENDENTLY_VERIFIED',timeZone:instrument.market==='KR'?'Asia/Seoul':'America/New_York',sourceUrl:instrument.market==='KR'?'https://github.com/koreainvestment/open-trading-api/tree/main/examples_llm/domestic_stock/inquire_daily_itemchartprice':'https://github.com/koreainvestment/open-trading-api/tree/main/examples_llm/overseas_stock/dailyprice'};
+ return {bars:rows,receivedAt:asOf,priceAsOf:rows.at(-1).date,priceType:'PROVIDER_ADJUSTED_DAILY_CLOSE',source:'KIS',sourceHash:/^[a-f0-9]{64}$/.test(response.sourceFingerprint||'')?response.sourceFingerprint:createHash('sha256').update(JSON.stringify(response)).digest('hex'),quality:'OBSERVED_NOT_INDEPENDENTLY_VERIFIED',timeZone:instrument.market==='KR'?'Asia/Seoul':'America/New_York',sourceUrl:instrument.market==='KR'?'https://github.com/koreainvestment/open-trading-api/tree/main/examples_llm/domestic_stock/inquire_daily_itemchartprice':'https://github.com/koreainvestment/open-trading-api/tree/main/examples_llm/overseas_stock/dailyprice'};
 }
 export function validWorkspaceSnapshot(value,id,at){
  if(value?.instrumentKey!==id||value.source!=='KIS'||!/^[a-f0-9]{64}$/.test(value.sourceHash||'')||value.priceType!=='PROVIDER_ADJUSTED_DAILY_CLOSE'||!Number.isFinite(Date.parse(value.receivedAt))||Date.parse(value.receivedAt)>at||!Array.isArray(value.bars)||!value.bars.length||value.bars.length>100)return false;
@@ -51,7 +52,7 @@ export function workspaceScenario(snapshot,instrument,asOf,holding=null){
  if(snapshot.priceAsOf<end.toISOString().slice(0,10))return {...scenario,action:'DATA_UNAVAILABLE',reason:'LATEST_COMPLETED_SESSION_UNCONFIRMED',entry:null,stop:null,target:null,metrics:null,validUntil:null};
  return scenario;
 }
-export function createTradingWorkspace({env=process.env,request=createKisRequest({appKey:env.KIS_APP_KEY,appSecret:env.KIS_APP_SECRET,environment:env.KIS_ENV||'paper'}),directory='data/v2/trading-workspace',now=()=>Date.now(),loadEvents=async()=>[]}={}){
+export function createTradingWorkspace({env=process.env,request=env.KSTOCK_MARKET_GATEWAY_ENABLED==='true'?createMarketGatewayRequest():createKisRequest({appKey:env.KIS_APP_KEY,appSecret:env.KIS_APP_SECRET,environment:env.KIS_ENV||'paper'}),directory='data/v2/trading-workspace',now=()=>Date.now(),loadEvents=async()=>[]}={}){
  const cache=new Map();let inFlight=null,nextRequest=0,hourStart=now(),hourRequests=0,masterSnapshot=null,masterReadAt=0;
  async function instruments({market='KR',q=''}={}){
   let snapshot=masterSnapshot;if(!snapshot||now()-masterReadAt>300000){try{const content=await readFile(path.join(directory,'instruments.json'),'utf8');if(content.length<=9000000){snapshot=JSON.parse(content);masterSnapshot=snapshot;masterReadAt=now();}}catch{}}
@@ -74,7 +75,7 @@ export function createTradingWorkspace({env=process.env,request=createKisRequest
   if(!validWorkspaceSnapshot(saved,id,at))saved=null;
   if(saved&&at-Date.parse(saved.receivedAt)<300000)return finish(saved,'OBSERVED');
   if(env.KSTOCK_DECISION_READ_ENABLED==='false')return finish(saved,'UNAVAILABLE','READ_DISABLED');
-  if(!env.KIS_APP_KEY||!env.KIS_APP_SECRET)return saved&&at-Date.parse(saved.receivedAt)<86400000?finish(saved,'STORED_OBSERVATION','SERVER_USES_SYNCED_DAILY_CLOSE'):finish(saved,'UNAVAILABLE','PROVIDER_NOT_CONFIGURED');
+  if(env.KSTOCK_MARKET_GATEWAY_ENABLED!=='true'&&(!env.KIS_APP_KEY||!env.KIS_APP_SECRET))return saved&&at-Date.parse(saved.receivedAt)<86400000?finish(saved,'STORED_OBSERVATION','SERVER_USES_SYNCED_DAILY_CLOSE'):finish(saved,'UNAVAILABLE','PROVIDER_NOT_CONFIGURED');
   if(at-hourStart>=3600000){hourStart=at;hourRequests=0;}
   if(inFlight||at<nextRequest||hourRequests>=120)return finish(saved,'UNAVAILABLE','PROVIDER_COOLDOWN');
   inFlight=id;nextRequest=at+2000;hourRequests++;
@@ -90,7 +91,7 @@ export function createTradingWorkspace({env=process.env,request=createKisRequest
    const value={...parseWorkspaceHistory(response,instrument,{asOf,through:compact(end)}),instrumentKey:id};
    await mkdir(directory,{recursive:true,mode:0o700});const temporary=file+'.'+randomUUID()+'.tmp';await writeFile(temporary,JSON.stringify(value),{mode:0o600});await rename(temporary,file);cache.set(id,value);if(cache.size>1000)cache.delete(cache.keys().next().value);
    return finish(value,'OBSERVED');
-  }catch(error){nextRequest=at+60000;return finish(saved,'UNAVAILABLE',['RATE_LIMIT','TIMEOUT','DATE_SCOPE_INVALID','PROVIDER_IDENTITY_MISMATCH','PROVIDER_DATE_INVALID','PROVIDER_BAR_INVALID','HTTP_403','HTTP_401'].includes(error.code||error.message)?error.code||error.message:'PROVIDER_UNAVAILABLE');}
+  }catch(error){nextRequest=at+60000;const reason=['RATE_LIMIT','TIMEOUT','DATE_SCOPE_INVALID','PROVIDER_IDENTITY_MISMATCH','PROVIDER_DATE_INVALID','PROVIDER_BAR_INVALID','HTTP_403','HTTP_401','MARKET_GATEWAY_UNAVAILABLE'].includes(error.code||error.message)?error.code||error.message:'PROVIDER_UNAVAILABLE';return finish(saved,saved&&at-Date.parse(saved.receivedAt)<86400000?'STORED_OBSERVATION':'UNAVAILABLE',reason);}
   finally{inFlight=null;}
  }
  async function opportunities(market){

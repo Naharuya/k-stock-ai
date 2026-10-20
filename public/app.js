@@ -62,7 +62,7 @@ async function checkHealth() {
     if (!response.ok || !health.ok) throw new Error("health");
     byId("settings-version").textContent = `서버 버전: ${health.version || "미확인"} · 설치된 앱 버전은 해당 앱 설정에서 확인하세요.`;
     const sourceLabel = value => value === "NOT_CONFIGURED" ? "인증정보 미구성" : "실제 연결 미검증";
-    byId("dashboard-sources").textContent = `KIS: ${sourceLabel(health.dataSources?.kis)} · OpenDART: ${sourceLabel(health.dataSources?.opendart)} · Scheduler: 실행 미검증`;
+    byId("dashboard-sources").textContent = `KIS 직접: ${sourceLabel(health.dataSources?.kis)} · 맥미니 시세 연결: ${sourceLabel(health.dataSources?.marketGateway)} · OpenDART: ${sourceLabel(health.dataSources?.opendart)} · Scheduler: 실행 미검증`;
     byId("health-dot").classList.add("online");
     byId("health-label").textContent = "서버 연결됨";
     byId("server-state").textContent = "SEC 공시 조회 가능";

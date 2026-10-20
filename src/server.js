@@ -86,7 +86,7 @@ app.get("/health", (_req, res) => {
     version: "0.1.0",
     mode: process.env.KSTOCK_AI_MODE || "mock",
     externalAccess: externalEnabled,
-    dataSources: { kis: process.env.KIS_APP_KEY && process.env.KIS_APP_SECRET ? 'CONFIGURED_NOT_VERIFIED' : 'NOT_CONFIGURED', opendart: process.env.OPENDART_API_KEY ? 'CONFIGURED_NOT_VERIFIED' : 'NOT_CONFIGURED', scheduler: 'NOT_VERIFIED' },
+    dataSources: { marketGateway: process.env.KSTOCK_MARKET_GATEWAY_ENABLED === 'true' ? 'CONFIGURED_NOT_VERIFIED' : 'NOT_CONFIGURED', kis: process.env.KIS_APP_KEY && process.env.KIS_APP_SECRET ? 'CONFIGURED_NOT_VERIFIED' : 'NOT_CONFIGURED', opendart: process.env.OPENDART_API_KEY ? 'CONFIGURED_NOT_VERIFIED' : 'NOT_CONFIGURED', scheduler: 'NOT_VERIFIED' },
     brokerEnabled: false,
     liveTrading: false,
   });
