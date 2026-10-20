@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {programSummary,cyclePolicy,cycleRequest} from './macmini-program-policy.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
@@ -32,18 +33,33 @@ async function publish(report,suffix){
  fs.writeFileSync(path.join(directory,name+'.json'),JSON.stringify({...report,delivery},null,2)+'\n',{mode:0o600,flag:'wx'});
  console.log(JSON.stringify({status:report.status,delivery,report:name+'.md'}));
 }
+const tradingMode=fs.existsSync(path.join(root,'docs/KSTOCK_TRADING_WORKER_ORDER.md'));
+function runTradingCycle(){
+ const env=Object.fromEntries(Object.entries(process.env).filter(([k])=>!/(KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL|AUTHORIZATION)/i.test(k)));
+ const master=spawnSync('/usr/bin/python3',[path.join(root,'scripts/refresh-trading-instruments.py')],{cwd:root,env,encoding:'utf8',timeout:150000,maxBuffer:1000000});
+ if(master.status!==0)return {status:'BLOCKED',reason:'MASTER_REFRESH_FAILED',next:'공식 마스터 조회 오류 확인; 원문 오류에 비밀값을 포함해 공유하지 않음'};
+ const task=spawnSync(process.execPath,[path.join(root,'scripts/run-trading-data-cycle.mjs'),'--approved-read-only'],{cwd:root,env,encoding:'utf8',timeout:150000,maxBuffer:1000000});
+ let value;for(const line of String(task.stdout||'').split('\n'))try{value=JSON.parse(line);}catch{}
+ if(!value)return {status:'BLOCKED',reason:'TRADING_CYCLE_RESULT_UNAVAILABLE',exitCode:task.status};
+ const sync=spawnSync('/usr/bin/python3',[path.join(root,'scripts/sync-trading-data.py'),'--publish'],{cwd:root,env,encoding:'utf8',timeout:150000,maxBuffer:1000000});
+ let synced;try{synced=JSON.parse(sync.stdout);}catch{}
+ return {status:value.status,universeSecurities:value.universeSecurities??null,uniqueAttempted:value.uniqueAttempted??null,observed:value.observed??null,refreshAttempts:value.refreshAttempts??null,externalHttpRequests:value.externalHttpRequests??null,reason:value.reason||null,exitCode:task.status,publicMarketSync:sync.status===0&&synced?.published===true?'PUBLISHED':'FAILED',syncedFiles:synced?.files??null};
+}
 try{
  let report;
  try{const state=await call('/developer/status?project=K-STOCK');report=snapshot(state.latestJob);}catch{report={checkedAt:new Date().toISOString(),status:'BLOCKED',reason:'JINI_STATUS_UNAVAILABLE',next:'JINI 연결 복구 필요'};await publish(report,'hourly');process.exitCode=1;}
  if(report?.jobId||report?.status==='NOT_RUN'){
   if(fs.existsSync(hold)){report.status='PAUSED';report.next='HOLD 유지 중; 상태 보고만 수행';}
   await publish(report,'hourly');
-  if(!fs.existsSync(hold)&&!['RUNNING','DELAYED'].includes(report.status)&&report.cycleMode!=='INDEPENDENT_FINAL_REVIEW_REQUIRED'&&!process.argv.includes('--report-only')){
+  if(!tradingMode&&!fs.existsSync(hold)&&!['RUNNING','DELAYED'].includes(report.status)&&report.cycleMode!=='INDEPENDENT_FINAL_REVIEW_REQUIRED'&&!process.argv.includes('--report-only')){
    const order=fs.readFileSync(path.join(root,'docs/KSTOCK_MACMINI_CONTINUOUS_PROMPT.md'),'utf8');
    try{
     await call('/developer/run',{project:'K-STOCK',request:cycleRequest(order,report.program,report.cycleMode)},30*60000);
     const state=await call('/developer/status?project=K-STOCK');await publish(snapshot(state.latestJob),'result');
    }catch{await publish({checkedAt:new Date().toISOString(),status:'BLOCKED',reason:'EXECUTION_RESPONSE_UNAVAILABLE',next:'기존 작업 상태를 다음 주기에 재확인; 이번 주기 재요청 없음'},'result');process.exitCode=1;}
   }
+ }
+ if(tradingMode&&!fs.existsSync(hold)&&!process.argv.includes('--report-only')){
+  const tradingRefresh=runTradingCycle();await publish({checkedAt:new Date().toISOString(),status:tradingRefresh.status,tradingRefresh,sourceCollection:'MARKET_DATA_READ_ONLY',recommendation:'HOLD',next:'다음 시간별 미완료 시세 배치 계속; 공개 마스터/일봉만 동기화'},'trading-result');
  }
 }finally{fs.unlinkSync(lock);}

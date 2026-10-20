@@ -56,6 +56,16 @@ try:
                 code, headers, text = request(route)
                 check('design_asset:'+route, code == 200 and mime in headers.get('Content-Type','') and marker in text)
             check('responsive_design_linked', '/workspace-design.css' in shell and '/kstock-mark.svg' in shell)
+        if (stage/'public/trading-workspace.js').is_file():
+            for route,marker in [('/trading-workspace.js','BUY_CONDITION_MET'),('/trading-workspace.css','.trading-card')]:
+                code,_,text=request(route);check('trading_asset:'+route,code==200 and marker in text)
+            check('trading_anonymous_401',request('/api/v2/trading/instruments')[0]==401)
+            code,_,text=request('/api/v2/trading/instruments?market=KR',token);check('trading_catalog_authenticated',code==200 and json.loads(text).get('success') is True)
+            check('trading_invalid_instrument_400',request('/api/v2/trading/detail?market=KR&symbol=invalid',token)[0]==400)
+            check('trading_invalid_holding_400',request('/api/v2/trading/holding-review',token,b'{}')[0]==400)
+            check('trading_invalid_replay_400',request('/api/v2/trading/replay',token,b'{}')[0]==400)
+            code,_,text=request('/api/v2/trading/detail?market=KR&symbol=005930',token);workspace=json.loads(text)
+            check('trading_missing_prices_not_fabricated',code==200 and workspace.get('quote') is None and workspace.get('strategy',{}).get('action')=='DATA_UNAVAILABLE')
         valid = {'fromDate':'2026-09-01', 'toDate':'2026-09-03', 'initialCash':1000, 'positions':[{'market':'KR','ticker':'005930','buy':100,'quantity':1,'fee':0,'tax':0}]}
         code, headers, text = request('/api/v2/paper/performance', token, json.dumps(valid).encode())
         data = json.loads(text); pending = data.get('reason')

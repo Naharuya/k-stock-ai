@@ -6,6 +6,8 @@ const BASE_URLS = {
 };
 
 const OPERATIONS = {
+  'decision-daily-prices': {path:'/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice',transactionId:'FHKST03010100'},
+  'decision-us-daily-prices': {path:'/uapi/overseas-price/v1/quotations/dailyprice',transactionId:'HHDFS76240000'},
   'nonapple-daily-prices': {path:'/uapi/overseas-price/v1/quotations/dailyprice',transactionId:'HHDFS76240000'},
   'us-daily-prices': {path:'/uapi/overseas-price/v1/quotations/dailyprice',transactionId:'HHDFS76240000'},
   'index-daily': {path:'/uapi/domestic-stock/v1/quotations/inquire-daily-indexchartprice',transactionId:'FHKUP03500100'},
@@ -91,13 +93,23 @@ export function createKisRequest({
     if (!appKey || !appSecret) {
       throw new Error('KIS_APP_KEY and KIS_APP_SECRET are required.');
     }
-    if (typeof symbol !== 'string' || (operation === 'nonapple-daily-prices' ? symbol!=='MSFT' : operation === 'us-daily-prices' ? symbol!=='AAPL' : operation === 'index-daily' ? !['0001','1001'].includes(symbol) : !/^\d{6}$/.test(symbol))) {
+    if (typeof symbol !== 'string' || (operation === 'decision-daily-prices' ? !/^[0-9][A-Z0-9]{5}$/.test(symbol) : operation === 'decision-us-daily-prices' ? !/^[A-Z][A-Z0-9.]{0,9}$/.test(symbol) : operation === 'nonapple-daily-prices' ? symbol!=='MSFT' : operation === 'us-daily-prices' ? symbol!=='AAPL' : operation === 'index-daily' ? !['0001','1001'].includes(symbol) : !/^\d{6}$/.test(symbol))) {
       throw new Error('A six-digit KIS stock code is required');
     }
 
     const definition = OPERATIONS[operation];
     const url = new URL(definition.path, baseUrl);
-    if(operation==='us-daily-prices'||operation==='nonapple-daily-prices') {
+    if(operation==='decision-us-daily-prices'||operation==='decision-daily-prices') {
+      const valid=d=>typeof d==='string'&&/^\d{8}$/.test(d)&&Number.isFinite(Date.parse(`${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`))&&new Date(`${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`).toISOString().slice(0,10).replaceAll('-','')===d;
+      const today=new Date(now()).toISOString().slice(0,10).replaceAll('-','');
+      if(!valid(params.from)||!valid(params.to)||params.from>params.to||params.to>today||Date.parse(`${params.to.slice(0,4)}-${params.to.slice(4,6)}-${params.to.slice(6,8)}`)-Date.parse(`${params.from.slice(0,4)}-${params.from.slice(4,6)}-${params.from.slice(6,8)}`)>200*86400000)throw createRequestError('Decision date scope invalid','DATE_SCOPE_INVALID');
+      if(operation==='decision-us-daily-prices') {
+        if(!['NAS','NYS','AMS'].includes(params.exchange))throw createRequestError('Decision exchange invalid','EXCHANGE_INVALID');
+        for(const [k,v]of Object.entries({AUTH:'',EXCD:params.exchange,SYMB:symbol,GUBN:'0',BYMD:params.to,MODP:'1'}))url.searchParams.set(k,v);
+      }else{
+        for(const [k,v]of Object.entries({FID_COND_MRKT_DIV_CODE:'J',FID_INPUT_ISCD:symbol,FID_INPUT_DATE_1:params.from,FID_INPUT_DATE_2:params.to,FID_PERIOD_DIV_CODE:'D',FID_ORG_ADJ_PRC:'0'}))url.searchParams.set(k,v);
+      }
+    }else if(operation==='us-daily-prices'||operation==='nonapple-daily-prices') {
       const d=params.to;
       if(typeof d!=='string'||!/^2025\d{4}$/.test(d)||!Number.isFinite(Date.parse(`${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`))||new Date(`${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`).toISOString().slice(0,10).replaceAll('-','')!==d)throw new Error('US_PRICE_DATE_SCOPE_INVALID');
       for(const [k,v]of Object.entries({AUTH:'',EXCD:'NAS',SYMB:symbol,GUBN:'0',BYMD:d,MODP:'0'}))url.searchParams.set(k,v);

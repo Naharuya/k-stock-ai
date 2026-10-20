@@ -7,6 +7,12 @@
   const research=await candidateRequest('/api/v2/research/dashboard');check('authenticatedResearch',research.success===true);renderSimpleResearch(research);
   if(!window.KStockNative)check('invalidCredentialRejected',(await fetch('/api/v2/candidates',{headers:{Authorization:'Bearer invalid-device-test'},cache:'no-store'})).status===401);
   check('savedOfficialEvents',research.summary?.independentEvents>0||research.eventCards?.length>0||research.people?.length>0||research.signalCards?.length>0||Number(research.summary?.statements)>0);
+  const catalog=await candidateRequest('/api/v2/trading/instruments?market=KR');check('tradingCatalogConnected',catalog.universeSecurities>0&&catalog.items.length>0);
+  const kr=await candidateRequest('/api/v2/trading/detail?market=KR&symbol=005930');const us=await candidateRequest('/api/v2/trading/detail?market=US&symbol=AAPL&exchange=NAS');
+  check('actualKrDailyClose',kr.quote?.close>0&&kr.history?.bars?.length>=40);check('actualUsDailyClose',us.quote?.close>0&&us.history?.bars?.length>=40);
+  check('krUsCurrencySeparated',kr.instrument.currency==='KRW'&&us.instrument.currency==='USD');check('ruleSimulationNotRecommendation',kr.strategy.policy.mode==='RULE_SIMULATION'&&kr.recommendationStatus==='HOLD'&&kr.orderExecution===false);
+  const holding=await candidateRequest('/api/v2/trading/holding-review',true,{method:'POST',body:{market:'KR',symbol:'005930',holding:{averageCost:kr.quote.close,quantity:1}}});check('holdingReviewNoExecution',holding.strategy.holdingContext==='USER_ENTERED'&&holding.orderExecution===false);
+  location.hash='trading-today';applyResearchScreen();for(let n=0;n<100&&!document.querySelector('#trading-home-detail .trading-price');n++)await new Promise(r=>setTimeout(r,100));check('newTradingHomeVisible',document.getElementById('trading-today').classList.contains('screen-active')&&!!document.querySelector('#trading-home-detail .trading-price'));
   location.hash='stock-analysis';applyResearchScreen();check('stockWorkspace',byId('stock-analysis').classList.contains('screen-active'));
   location.hash='paper-portfolio';applyResearchScreen();
   const seed=KStockPaperBackup.serialize({positions:[{market:'KR',ticker:'005930',currency:'KRW',buy:100,quantity:2,fee:3,tax:2}],cashFlows:[],sales:[],dividends:[],initialCash:1000,fromDate:'2026-09-01',toDate:'2026-09-03'});
@@ -20,7 +26,7 @@
   await loadPaperPerformance();check('officialEvidenceStillPending',byId('paper-performance-message').textContent.includes('보류')&&paperReportSnapshot===null);
   check('noUnverifiedCsv',byId('paper-report-build').disabled);
   click('paper-clear');check('recordsCleared',!hasPaperRecords());set('paper-backup-text',backup);click('paper-backup-preview');check('restorePreview',pendingPaperBackup!==null);click('paper-backup-apply');check('restoreAllFourKinds',paperPositions.length===1&&paperCashFlows.length===1&&paperSales.length===1&&paperDividends.length===1);
-  click('paper-clear');check('testRecordsCleaned',!hasPaperRecords());location.hash='overview';applyResearchScreen();
+  click('paper-clear');check('testRecordsCleaned',!hasPaperRecords());location.hash='trading-today';applyResearchScreen();
   check('noHorizontalOverflow',document.documentElement.scrollWidth<=innerWidth);
   result={status:'PASS',scope:'REAL_PHYSICAL_WEBVIEW_LIVE_AUTH_AND_SAVED_RESEARCH_SYNTHETIC_USER_RECORDS',checks,checkedAt:new Date().toISOString()};
  }catch(error){result={status:'FAIL',checks,error:String(error.message),checkedAt:new Date().toISOString()};}

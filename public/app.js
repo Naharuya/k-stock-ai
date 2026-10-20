@@ -86,7 +86,7 @@ async function loadPortfolio() {
   showMessage("SEC 원문 공시를 확인하고 있습니다.");
   try {
     const response = await fetch("/api/disclosures/berkshire/portfolio", {
-      headers: { Authorization: `Bearer ${sessionToken}`, Accept: "application/json" },
+      headers: { Authorization: `Bearer ${sessionToken}`, Accept: "application/json", ...(options.body!==undefined?{"Content-Type":"application/json"}:{}) },
       cache: "no-store",
       redirect: "error",
     });
@@ -163,6 +163,8 @@ async function candidateRequest(url, requireSuccess = true, options = {}) {
   if(options.signal?.aborted)throw Object.assign(new Error("REQUEST_ABORTED"),{name:"AbortError"});
   const request = fetch(url, {
     signal: options.signal,
+    method: options.method || "GET",
+    ...(options.body!==undefined?{body:JSON.stringify(options.body)}:{}),
     headers: { ...(sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {}), Accept: "application/json" },
     cache: "no-store", redirect: "error",
   });
@@ -1835,7 +1837,7 @@ function renderSimpleResearch(data){
  }
  restorePeerView(root,view);if(scroll!==null&&typeof window.scrollTo==='function')window.scrollTo(0,scroll);
 }
-async function refreshSimpleResearch(){if(simpleResearchLoading)return;simpleResearchLoading=true;const button=byId('research-home-refresh'),message=byId('research-home-message');button.disabled=true;message.textContent='연구 자료 확인 중';message.className='research-loading';try{const data=await candidateRequest('/api/v2/research/dashboard');renderSimpleResearch(data);message.textContent=`공식 자료 기반 · 화면 조회 ${influenceDate(data.asOf)} · 사건·가격 기준일은 각 카드에 표시 · 추천 보류`;message.className='research-note';}catch(error){if(error.message==='AUTH'){message.textContent='인증이 만료되었거나 거절되었습니다. 인증 설정에서 토큰을 갱신한 뒤 다시 조회하세요.';message.className='research-error';return;}message.textContent=simpleResearchData?'연결 실패 · 표시된 자료는 이전 조회 결과입니다. 새로고침으로 다시 확인하세요.':'연결 실패 · 연구 자료를 불러오지 못했습니다. 새로고침으로 다시 확인하세요.';message.className='research-error';if(!simpleResearchData){byId('research-home-counts').replaceChildren(candidateNode('p','연구 현황을 불러오지 못했습니다. 연결 후 다시 확인하세요.','research-error'));for(const id of ['research-home-recent','research-current-candidates','research-signal-cards','research-results-cards'])byId(id).replaceChildren(candidateNode('p','연구 자료를 불러오지 못했습니다. 연결 후 다시 확인하세요.','research-error'));}}finally{button.disabled=false;simpleResearchLoading=false;}}
+async function refreshSimpleResearch(){if(simpleResearchLoading)return;simpleResearchLoading=true;const button=byId('research-home-refresh'),message=byId('research-home-message');button.disabled=true;message.textContent='연구 자료 확인 중';message.className='research-loading';try{const data=await candidateRequest('/api/v2/research/dashboard');renderSimpleResearch(data);if(typeof window!=='undefined'&&typeof window.dispatchEvent==='function')window.dispatchEvent(new Event('kstock-data-ready'));message.textContent=`공식 자료 기반 · 화면 조회 ${influenceDate(data.asOf)} · 사건·가격 기준일은 각 카드에 표시 · 추천 보류`;message.className='research-note';}catch(error){if(error.message==='AUTH'){message.textContent='인증이 만료되었거나 거절되었습니다. 인증 설정에서 토큰을 갱신한 뒤 다시 조회하세요.';message.className='research-error';return;}message.textContent=simpleResearchData?'연결 실패 · 표시된 자료는 이전 조회 결과입니다. 새로고침으로 다시 확인하세요.':'연결 실패 · 연구 자료를 불러오지 못했습니다. 새로고침으로 다시 확인하세요.';message.className='research-error';if(!simpleResearchData){byId('research-home-counts').replaceChildren(candidateNode('p','연구 현황을 불러오지 못했습니다. 연결 후 다시 확인하세요.','research-error'));for(const id of ['research-home-recent','research-current-candidates','research-signal-cards','research-results-cards'])byId(id).replaceChildren(candidateNode('p','연구 자료를 불러오지 못했습니다. 연결 후 다시 확인하세요.','research-error'));}}finally{button.disabled=false;simpleResearchLoading=false;}}
 byId('research-home-refresh').addEventListener('click',refreshSimpleResearch);
 byId('research-candidate-search').addEventListener('input',()=>{researchCandidateQuery=byId('research-candidate-search').value.slice(0,100);if(simpleResearchData)renderSimpleResearch(simpleResearchData);});
 byId('research-readiness-filter').addEventListener('change',()=>{researchReadinessFilter=byId('research-readiness-filter').value;if(simpleResearchData)renderSimpleResearch(simpleResearchData);});

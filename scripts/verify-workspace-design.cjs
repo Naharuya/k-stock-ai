@@ -18,7 +18,7 @@ const root=path.resolve(__dirname,'..'),out=path.join(root,'data/v2/verification
      const dimensions=await page.evaluate(()=>({viewport:innerWidth,document:document.documentElement.scrollWidth}));
      const violations=await page.evaluate(async()=>{const r=await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa','wcag22aa']}});return r.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary}))}));});
      cases.push({width,theme,route,noOverflow:dimensions.document<=dimensions.viewport,violations});
-     if(route==='overview'&&[390,1440].includes(width))await page.screenshot({path:path.join(out,`home-${width}-${theme}.png`),fullPage:true});
+     if(['overview','trading-today'].includes(route)&&[390,1440].includes(width))await page.screenshot({path:path.join(out,`${route==='trading-today'?'trading-home':'home'}-${width}-${theme}.png`),fullPage:true});
     }
    }
    // Enlarged text changes layout, rather than only scaling a screenshot.

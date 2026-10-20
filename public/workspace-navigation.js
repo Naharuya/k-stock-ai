@@ -2,6 +2,7 @@
 (function (root) {
   'use strict';
   const groups = [
+    ['매매 정보', [['trading-today','오늘의 판단'],['watch-stocks','관심종목'],['my-stocks','내 보유종목'],['stock-search','종목검색']]],
     ['리서치', [['overview', '홈'], ['trade-recommendations', '매수·매도 판단'], ['investment-signals', '투자 신호'], ['global-influence', '영향력 인물'], ['research-results', '연구 결과'], ['market-analysis', '시장 분석'], ['candidates', '후보'], ['stock-analysis', '종목 분석'], ['peer-validation', '동종기업 비교']]],
     ['모의 기록·성과', [['paper-portfolio', '모의 포트폴리오'], ['performance', '보고서·성과']]],
     ['데이터·설정·이용 안내', [['agent-dashboard', '검증 운영'], ['holdings', '미국 공시'], ['sources', '공식 데이터 출처'], ['settings', '설정·서버 연결']]]
@@ -52,7 +53,8 @@
     menu.id = 'workspace-navigation';
     const summary = menu.querySelector('summary'); summary.setAttribute('aria-label', '전체 메뉴 열기');
     bottom.replaceChildren();
-    for (const [id, label] of [['overview', '홈'], ['investment-signals', '신호'], ['paper-portfolio', '모의 기록'], ['research-results', '연구']]) {
+    const primary=document.getElementById('trading-today')?[['trading-today','오늘의 판단'],['watch-stocks','관심종목'],['my-stocks','보유종목'],['stock-search','종목검색']]:[['overview', '홈'], ['investment-signals', '신호'], ['paper-portfolio', '모의 기록'], ['research-results', '연구']];
+    for (const [id, label] of primary) {
       if (available.some(([, items]) => items.some(([key]) => key === id))) bottom.append(link(id, label));
     }
     const more = document.createElement('button'); more.type = 'button'; more.textContent = '전체 메뉴'; more.setAttribute('aria-controls', menu.id);

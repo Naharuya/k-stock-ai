@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#57429A">
-  <title>K-Stock AI | 근거로 보는 투자 연구</title>
+  <title>K-Stock | 수일~수주 매매 조건</title>
   <link rel="stylesheet" href="/styles.css">
   <script src="/paper-backup.js" defer></script>
   <script src="/app.js" defer></script>
@@ -12,11 +12,13 @@
   <script src="/workspace-navigation.js" defer></script>
   <script src="/research-progress.js" defer></script>
   <link rel="stylesheet" href="/workspace-design.css">
+  <link rel="stylesheet" href="/trading-workspace.css">
+  <script src="/trading-workspace.js" defer></script>
 </head>
 <body>
   <div class="shell">
     <aside class="rail" aria-label="주요 메뉴">
-      <a class="wordmark" href="#overview" aria-label="K-Stock 홈"><img src="/kstock-mark.svg" width="44" height="44" alt=""></a><div class="brand-name">K-Stock AI<small>근거로 보는 투자 연구</small></div>
+      <a class="wordmark" href="#trading-today" aria-label="K-Stock 홈"><img src="/kstock-mark.svg" width="44" height="44" alt=""></a><div class="brand-name">K-Stock AI<small>근거로 확인하는 매매 조건</small></div>
       <div class="rail-label">리서치</div>
       <a class="rail-link active" href="#overview">홈</a>
       <a class="rail-link" href="#trade-recommendations">매수·매도 판단</a><a class="rail-link" href="#investment-signals">투자 신호</a>
@@ -42,6 +44,16 @@
         <div class="breadcrumb"><strong>K-Stock AI</strong><span>/</span>공식 근거로 보는 시장</div>
         <div class="topbar-right"><span class="status-dot" id="health-dot"></span><span id="health-label">서버 확인 중</span><time id="today"></time><details data-evidence-key="static-disclosure-1" class="workspace-menu"><summary aria-label="전체 화면 메뉴">전체 메뉴</summary><nav aria-label="전체 화면"><a href="#trade-recommendations">매수·매도 판단</a><a href="#overview">홈</a><a href="#investment-signals">투자 신호</a><a href="#global-influence">영향력 인물</a><a href="#research-results">연구 결과</a><a href="#market-analysis">시장 분석</a><a href="#stock-analysis">종목 분석</a><a href="#peer-validation">동종기업 비교</a><a href="#candidates">후보</a><a href="#paper-portfolio">모의 포트폴리오</a><a href="#performance">성과·벤치마크</a><a href="#agent-dashboard">검증 운영</a><a href="#holdings">미국 공시</a><a href="#settings">설정</a></nav></details></div>
       </header>
+
+      <section id="trading-today" class="research-screen trading-screen" aria-labelledby="today-title">
+        <header class="trading-hero"><p class="eyebrow">DAILY CLOSE · DAYS TO WEEKS</p><h1 id="today-title">오늘의 매매 조건</h1><p>국내·미국 일봉으로 살펴보는 수일~수주 모의 전략입니다. 실제 주문은 실행하지 않습니다.</p><a href="#stock-search" class="candidate-button">종목 찾기</a></header>
+        <div class="trading-controls"><label>시장<select id="trading-market"><option value="KR">국내 주식 · KRW</option><option value="US">미국 주식 · USD</option></select></label><button id="trading-refresh" type="button" class="candidate-button">자료 다시 확인</button></div>
+        <p id="trading-status" role="status">종목 자료 확인 전</p><div id="trading-home-detail"></div><div id="trading-opportunities"></div><details class="trading-card"><summary>주요 종목 목록 펼치기</summary><div id="trading-catalog" class="trading-grid"></div></details><p class="research-note">조건 충족은 모의 규칙의 결과입니다. 검증된 투자 추천·목표 수익률이 아니며 거래정지·갭 등으로 기준 가격에 체결되지 않을 수 있습니다.</p>
+      </section>
+      <section id="stock-search" class="research-screen trading-screen" aria-labelledby="search-stock-title"><h2 id="search-stock-title">종목검색</h2><form id="trading-search-form" class="trading-controls"><label>시장<select id="trading-search-market"><option value="KR">국내</option><option value="US">미국</option></select></label><label>기업명 또는 종목코드<input id="trading-search-input" maxlength="50" autocomplete="off" placeholder="삼성전자 또는 005930"></label><label>미국 거래소<select id="trading-search-exchange"><option value="NAS">NASDAQ</option><option value="NYS">NYSE</option><option value="AMS">AMEX</option></select></label><button type="submit" class="candidate-button">검색</button></form><p id="trading-search-status" role="status"></p><div id="trading-search-results" class="trading-grid"></div><p>공급자 종목 마스터로 검색하고 국내 6자리 코드·미국 코드와 거래소를 직접 조회할 수 있습니다. 마스터 목록은 거래소 전수 대사나 모든 종목의 시세·전략 검증 완료를 뜻하지 않습니다.</p></section>
+      <section id="watch-stocks" class="research-screen trading-screen" aria-labelledby="watch-stock-title"><h2 id="watch-stock-title">관심종목</h2><p>종목코드만 이 기기의 웹 저장소에 보관합니다. 아래에서 모두 삭제할 수 있습니다.</p><button id="trading-watch-clear" type="button" class="candidate-button">관심종목 모두 삭제</button><p id="trading-watch-status" role="status"></p><div id="trading-watch-list" class="trading-grid"></div></section>
+      <section id="my-stocks" class="research-screen trading-screen" aria-labelledby="my-stock-title"><h2 id="my-stock-title">내 보유종목</h2><p>직접 입력한 보유입니다. 증권계좌 잔고·기존 모의기록과 연결되지 않습니다. 별도 저장을 선택하지 않으면 페이지를 닫을 때 사라집니다.</p><form id="trading-holding-form" class="trading-controls"><label>시장<select id="trading-holding-market"><option value="KR">국내</option><option value="US">미국</option></select></label><label>종목코드<input id="trading-holding-symbol" required maxlength="10" placeholder="005930 또는 AAPL"></label><label>미국 거래소<select id="trading-holding-exchange"><option value="NAS">NASDAQ</option><option value="NYS">NYSE</option><option value="AMS">AMEX</option></select></label><label>보유 수량<input id="trading-holding-quantity" type="number" min="0.000001" max="1000000000" step="any" required></label><label>평균 매수가 (원 통화)<input id="trading-holding-cost" type="number" min="0.000001" max="1000000000000" step="any" required></label><button type="submit" class="candidate-button">보유 등록·수정</button></form><label class="trading-storage"><input id="trading-holding-persist" type="checkbox"> 보유정보를 이 기기에 저장 (앱 자체 암호화 없음 · 공용 기기 사용 금지)</label><button id="trading-holding-clear" type="button" class="candidate-button">보유정보 모두 삭제</button><p id="trading-holding-status" role="status"></p><div id="trading-holding-list"></div><div id="trading-holding-review"></div></section>
+      <section id="trading-stock-detail" class="research-screen trading-screen" aria-labelledby="trading-detail-title"><h2 id="trading-detail-title">종목 상세</h2><div id="trading-detail-content"><p>홈 또는 검색에서 종목을 선택하세요.</p></div></section>
 
       <section id="research-home" class="research-screen research-home" aria-labelledby="research-home-title">
         <div class="research-heading research-hero">

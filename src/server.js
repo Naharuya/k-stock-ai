@@ -1,3 +1,4 @@
+import {createTradingWorkspace,registerTradingWorkspace} from './v2/trading_workspace.js';
 import {registerBackendResearchProgress} from './v2/backend_research_progress.js';
 import {createOvernightResearch} from './v2/overnight_research.js';
 import {createOfficialResearchCollection} from './v2/official_research_collection.js';
@@ -92,6 +93,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/api", requireExternalAuth);
+registerTradingWorkspace(app,createTradingWorkspace({directory:path.join(projectDirectory,"data/v2/trading-workspace"),loadEvents:async()=>{const r=await influenceService.load();return r.capitalEvents||[];}}));
 registerBackendResearchProgress(app,path.join(projectDirectory,"data/v2/research-progress.json"));
 const refreshOwnership = createOwnershipRefresh();
 const refreshSec = createSec13fRefresh();

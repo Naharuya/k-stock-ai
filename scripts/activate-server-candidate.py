@@ -52,6 +52,13 @@ try:
  if (stage/'public/workspace-design.css').is_file():
   code,_,body=request('/workspace-design.css');assert code==200 and '--hero-glow' in body;checks.append('responsive_design_css')
   code,_,body=request('/kstock-mark.svg');assert code==200 and '<svg' in body;checks.append('brand_svg')
+ if (stage/'public/trading-workspace.js').is_file():
+  for route,marker in [('/trading-workspace.js','BUY_CONDITION_MET'),('/trading-workspace.css','.trading-card')]:
+   code,_,body=request(route);assert code==200 and marker in body;checks.append('trading_asset:'+route)
+  assert request('/api/v2/trading/instruments')[0]==401;checks.append('trading_anonymous_401')
+  code,_,body=request('/api/v2/trading/instruments?market=KR',auth=True);catalog=json.loads(body);assert code==200 and catalog['universeSecurities']>0;checks.append('trading_catalog_available')
+  code,_,body=request('/api/v2/trading/opportunities?market=KR',auth=True);opportunities=json.loads(body);assert code==200 and opportunities.get('recommendationStatus')=='HOLD';checks.append('trading_conditions_not_recommendation')
+  assert request('/api/v2/trading/holding-review',b'{}',True)[0]==400;checks.append('invalid_direct_holding_400')
  assert request('/api/v2/research/dashboard')[0]==401;checks.append('anonymous_401')
  code,_,body=request('/api/v2/research/dashboard',auth=True);dashboard=json.loads(body);assert code==200 and dashboard.get('success') is True and dashboard.get('recommendationStatus')=='HOLD' and dashboard.get('summary',{}).get('researchEvents',0)>0;checks.append('authenticated_saved_research_hold')
  code,_,body=request('/api/v2/research/progress',auth=True);progress=json.loads(body);assert code==200 and progress.get('sourceCollection')=='NOT_RUN' and progress.get('newOfficialDocuments')==0;checks.append('task_completion_not_source_collection')
