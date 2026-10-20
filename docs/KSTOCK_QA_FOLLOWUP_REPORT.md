@@ -1,3 +1,11 @@
+# 연구 상태 보강 운영 반영 완료 — 2026-10-20 KST
+
+- 제품 커밋 d1a0c458d7042581a26b4daccce340f17df3c490 / 작업브랜치 push 완료. sourceMatchesCommit=true인 review-f5894b1cf096c9f3/167파일, archiveSHA951a7271c38080a3f411500c2800b6674e16e712887c8b541950d34e86ffd913 생성. 원격격리설치·런타임24 PASS 뒤 이전 review-c8624b74d51f4584에서 전환. 환경파일·current/data 보존, 기존unit백업, 자동복원준비, 롤백미실행.
+- 전환후11개/공개HTTPS PASS. 실제 인증된 progress API가 finishedAt을 workAt으로 반환함을 확인, sourceCollection NOT_RUN/신규0/HOLD 유지. research-freshness-remote-stage/runtime/activation/public-https/live-api-20261020.json. 서비스active/실거래OFF 유지. 앱재설치 없이 새로고침시 공통웹코드 반영.
+- 최종 전체941/Android계약4/브라우저29 PASS. CI는 master브랜치필터로 작업브랜치 실행0/NOT RUN. 이번 실제 물리기기 재실행은 NOT RUN이며 이전16개를 새실행으로 표현하지 않는다. 새 공식원천 수집/가격검증/스토어출시 완료가 아니다.
+
+---
+
 # 연구 작업 상태 신선도·재조회 보강 — 2026-10-20 KST
 
 - 프로젝트/origin/branch/기존변경·ARI 기준 확인. 작업보고 checkedAt을 다시 게시하면 실제 오래된 작업이 최신으로 보일 수 있는 문제 수정. 완료작업 finishedAt/실행중 startedAt을 기준으로24시간 신선도를 판단, 누락/미래/게시이후작업시각/시작종료역전/알수없는상태는 UNVERIFIED. sourceCollection NOT_RUN과 신규0 구분 유지. 새 외부수집/worker활성화/실거래 없음.
