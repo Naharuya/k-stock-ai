@@ -134,3 +134,5 @@ Skipped test totals produce TESTED_PARTIAL with SKIPPED_TESTS_NOT_RUN and are li
 ## Mac mini 작업 보고 상태
 
 GET `/api/v2/research/progress`는 기존 Bearer 인증과 no-store를 사용한다. 작업 보고와 공식 수집을 구분하며 `EVIDENCE_RECORDED`가 공식 자료 확보를 뜻하지 않는다. 보고가 없거나24시간 경과/미래시각이면 UNVERIFIED. 외부수집 NOT_RUN이면 신규 공식자료수0을 표시하며 미확인 수집은 NOT_VERIFIED/null을 사용한다. 로컬 작업 파일의 보고를 새로 연결하지 않으면 시간이 지나 UNVERIFIED가 된다.
+
+작업 신선도는 보고 재게시 checkedAt이 아닌 완료작업 finishedAt/실행중 startedAt 기준이다. 시각누락·역전·미래·재게시된 오래된작업은 UNVERIFIED이며 workAt에 검증된 실제작업 기준시각을 제공한다. 화면은 KST로 표시하고 요청10초 후 재조회할 수 있다. Android native HTTP 자체는 기존 bridge 제한까지 계속될 수 있으나 취소된 응답이 화면이나 인증을 바꾸지는 않는다.

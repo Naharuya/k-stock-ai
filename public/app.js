@@ -156,14 +156,26 @@ function candidateStatus(text, kind = "") {
   candidateMessage.className = `message ${kind}`;
 }
 
-async function candidateRequest(url, requireSuccess = true) {
+async function candidateRequest(url, requireSuccess = true, options = {}) {
   sessionToken = tokenInput.value.trim() || sessionToken;
   tokenInput.value = "";
   const requestToken = sessionToken;
-  const response = await fetch(url, {
+  if(options.signal?.aborted)throw Object.assign(new Error("REQUEST_ABORTED"),{name:"AbortError"});
+  const request = fetch(url, {
+    signal: options.signal,
     headers: { ...(sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {}), Accept: "application/json" },
     cache: "no-store", redirect: "error",
   });
+  let removeAbort=()=>{};
+  let response;
+  try {
+    response=await (options.signal?new Promise((resolve,reject)=>{
+      const abort=()=>reject(Object.assign(new Error("REQUEST_ABORTED"),{name:"AbortError"}));
+      options.signal.addEventListener('abort',abort,{once:true});removeAbort=()=>options.signal.removeEventListener('abort',abort);
+      if(options.signal.aborted)abort();
+      request.then(resolve,reject);
+    }):request);
+  } finally {removeAbort();}
   if (response.status === 401) {
     if (sessionToken === requestToken) sessionToken = "";
     tokenInput.focus();
