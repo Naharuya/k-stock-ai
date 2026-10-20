@@ -65,6 +65,7 @@ enum KStockMarketAlerts {
         }
         guard !Task.isCancelled,enabled else{return false}
         if up+down>0{let content=UNMutableNotificationContent();content.title="급상승·급하락 관측";content.body="상승 \(up)개 · 하락 \(down)개가 설정 기준에 도달했습니다. 공급자 순위이며 실시간 보장이 아닙니다.";content.sound = .default;content.userInfo=["kstock-route":"market-movers"];do{try await UNUserNotificationCenter.current().add(UNNotificationRequest(identifier:"kstock-market-alert",content:content,trigger:nil));if !enabled{UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers:["kstock-market-alert"]);return false};defaults.set(Dictionary(uniqueKeysWithValues:seen.sorted{$0.value>$1.value}.prefix(40).map{($0.key,$0.value)}),forKey:"market-alerts.seen")}catch{return false}}
+        if up+down==0{defaults.set(Dictionary(uniqueKeysWithValues:seen.sorted{$0.value>$1.value}.prefix(40).map{($0.key,$0.value)}),forKey:"market-alerts.seen")}
         defaults.set(Date().timeIntervalSince1970,forKey:"market-alerts.lastCheckedAt");defaults.set(observed>0 ? "CHECKED":"DATA_UNAVAILABLE",forKey:"market-alerts.state");writeStatus();return observed>0
     }
     @MainActor static func present(from controller:UIViewController){
