@@ -41,11 +41,12 @@ public class MainActivity extends Activity {
   String migrated=ServerAddress.migrate(old,prefs.getBoolean("server_explicit_custom",false));
   if(old!=null&&!old.equals(migrated))notifications.edit().putString("server",migrated).apply();
   try(InputStream in=getAssets().open("native-fetch.js")){ByteArrayOutputStream out=new ByteArrayOutputStream();byte[] b=new byte[4096];int n;while((n=in.read(b))!=-1)out.write(b,0,n);bridgeScript=out.toByteArray();}catch(Exception ignored){bridgeScript=new byte[0];}
-  LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(16,12,16,8);root.setBackgroundColor(Color.rgb(243,245,241));
+  LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(16,12,16,8);root.setBackgroundColor(Color.rgb(247,246,251));
   if(Build.VERSION.SDK_INT>=30){getWindow().setDecorFitsSystemWindows(false);root.setOnApplyWindowInsetsListener((v,insets)->{android.graphics.Insets b=insets.getInsets(WindowInsets.Type.systemBars());v.setPadding(b.left+16,b.top+12,b.right+16,b.bottom+8);return insets;});}
-  status=new TextView(this);status.setTextSize(15);status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);root.addView(status);
-  LinearLayout buttons=new LinearLayout(this);root.addView(buttons);
-  button(buttons,"연결 설정",()->connectionSettings());button(buttons,"다시 연결",()->openServer());
+  LinearLayout toolbar=new LinearLayout(this);toolbar.setGravity(android.view.Gravity.CENTER_VERTICAL);root.addView(toolbar,new LinearLayout.LayoutParams(-1,-2));
+  status=new TextView(this);status.setTextSize(12);status.setTextColor(Color.rgb(32,36,61));status.setMaxLines(3);status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);toolbar.addView(status,new LinearLayout.LayoutParams(0,-2,1));
+  LinearLayout buttons=new LinearLayout(this);toolbar.addView(buttons);
+  button(buttons,"인증 설정",()->connectionSettings());button(buttons,"새로고침",()->openServer());
   sample=button(root,"샘플 분석 확인 (실제 종목 아님)",()->sampleAnalysis());sample.setVisibility(View.GONE);
   web=new WebView(this);root.addView(web,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);
   WebSettings settings=web.getSettings();settings.setJavaScriptEnabled(true);settings.setDomStorageEnabled(true);
@@ -80,7 +81,7 @@ public class MainActivity extends Activity {
   });
   openServer();
  }
- private Button button(LinearLayout parent,String text,Runnable action){Button b=new Button(this);b.setText(text);b.setOnClickListener(v->action.run());parent.addView(b);return b;}
+ private Button button(LinearLayout parent,String text,Runnable action){Button b=new Button(this);b.setText(text);b.setTextSize(12);b.setTextColor(Color.rgb(81,60,150));b.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(240,236,250)));b.setOnClickListener(v->action.run());parent.addView(b);return b;}
  private WebResourceResponse response(ApiClient.Reply r){Map<String,String> headers=new HashMap<>(r.headers);headers.put("Cache-Control","no-store");return new WebResourceResponse(r.type.split(";")[0],"UTF-8",r.code,"Response",headers,new ByteArrayInputStream(r.bytes));}
  private WebResourceResponse htmlResponse(ApiClient.Reply r){return response(new ApiClient.Reply(r.code,injectedHtml(r.text()).getBytes(StandardCharsets.UTF_8),"text/html",r.state,r.headers));}
  private String injectedHtml(String html){String script="<script src='/__kstock_android_bridge__.js'></script>";int p=html.toLowerCase(Locale.ROOT).indexOf("<head");if(p>=0){int end=html.indexOf('>',p);if(end>=0)return html.substring(0,end+1)+script+html.substring(end+1);}return script+html;}
@@ -109,7 +110,7 @@ public class MainActivity extends Activity {
     if(epoch!=generation||isDestroyed())return;healthConnected=connected;
     if(!connected){showState(health.state==ApiClient.State.CONNECTED?ApiClient.State.FAILED:health.state);return;}
     status.setText(authenticated?"서버 연결됨 · API 인증은 요청 시 확인합니다.":"서버는 연결되었지만 인증이 필요합니다. 외부접속 토큰을 설정해 주세요.");
-    sample.setVisibility(allowsSample?View.VISIBLE:View.GONE);
+    sample.setVisibility(allowsSample&&!(page.type.contains("text/html")&&page.state==ApiClient.State.CONNECTED)?View.VISIBLE:View.GONE);
     if(page.type.contains("text/html")&&page.state==ApiClient.State.CONNECTED)web.loadUrl(server+"/?source=android");
     else web.loadDataWithBaseURL(null,"<html lang='ko'><meta name='viewport' content='width=device-width,initial-scale=1'><body style='font:17px sans-serif;padding:20px'><h2>K-Stock AI</h2><p>운영 API 서버에 연결했습니다.</p><p>현재 서버는 기존 앱의 웹 화면을 제공하지 않습니다. 연결 설정에서 외부접속 토큰을 저장할 수 있습니다.</p><p>샘플 분석은 연결 검증용 가상 데이터입니다. 실제 종목 조회·분석 화면은 서버의 해당 기능 제공 후 사용할 수 있습니다.</p><p>브로커·실거래는 비활성 상태로 유지됩니다.</p></body></html>","text/html","UTF-8",null);
    });

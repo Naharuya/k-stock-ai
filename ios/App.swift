@@ -44,12 +44,13 @@ final class ResearchController: UIViewController, WKNavigationDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
+        view.tintColor = UIColor { traits in traits.userInterfaceStyle == .dark ? UIColor(red:0.757,green:0.686,blue:0.965,alpha:1) : UIColor(red:0.396,green:0.314,blue:0.678,alpha:1) }
         #if KSTOCK_HTTPS_PREVIEW
         status.text = "HTTPS 연결 중 · 배포 전 검토용"
         #else
         status.text = "화면 연결 중 · 로컬 검증용"
         #endif
-        status.font = .preferredFont(forTextStyle: .footnote)
+        status.font = .preferredFont(forTextStyle: .caption1)
         status.adjustsFontForContentSizeCategory = true
         status.numberOfLines = 0
         status.accessibilityIdentifier = "kstock.connection.status"
@@ -57,14 +58,22 @@ final class ResearchController: UIViewController, WKNavigationDelegate {
         let retry = UIButton(type: .system)
         retry.accessibilityIdentifier = "kstock.connection.retry"
         retry.accessibilityHint = "검증 화면을 다시 불러옵니다. 현재 선택은 초기화될 수 있습니다."
-        retry.setTitle("화면 다시 연결", for: .normal)
-        retry.titleLabel?.font = .preferredFont(forTextStyle: .body)
+        retry.setTitle("새로고침", for: .normal)
+        retry.titleLabel?.font = .preferredFont(forTextStyle: .caption1)
         retry.titleLabel?.adjustsFontForContentSizeCategory = true
         retry.addTarget(self, action: #selector(reload), for: .touchUpInside)
         retry.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
-        let stack = UIStackView(arrangedSubviews: [status, retry, web])
+        let actions = UIStackView(arrangedSubviews: [retry])
+        actions.axis = .horizontal
+        actions.spacing = 12
+        let toolbar = UIStackView(arrangedSubviews: [status, actions])
+        toolbar.axis = traitCollection.preferredContentSizeCategory.isAccessibilityCategory ? .vertical : .horizontal
+        toolbar.spacing = 12
+        toolbar.alignment = .center
+        status.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        let stack = UIStackView(arrangedSubviews: [toolbar, web])
         stack.axis = .vertical
-        stack.spacing = 8
+        stack.spacing = 4
         stack.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(stack)
         NSLayoutConstraint.activate([
@@ -76,10 +85,10 @@ final class ResearchController: UIViewController, WKNavigationDelegate {
         web.navigationDelegate = self
         web.allowsBackForwardNavigationGestures = true
         #if KSTOCK_HTTPS_PREVIEW
-        let access = UIButton(type:.system); access.setTitle("인증 설정·삭제",for:.normal)
+        let access = UIButton(type:.system); access.setTitle("인증 설정·삭제",for:.normal); access.titleLabel?.font = .preferredFont(forTextStyle:.caption1); access.heightAnchor.constraint(greaterThanOrEqualToConstant:44).isActive = true
         access.accessibilityIdentifier="kstock.access.settings"
         access.addTarget(self,action:#selector(accessSettings),for:.touchUpInside)
-        stack.insertArrangedSubview(access,at:2)
+        actions.addArrangedSubview(access)
         if ProcessInfo.processInfo.arguments.contains("--import-auth") {
             do { try KStockAccessCredential.importOnce() } catch { status.text="인증 설정을 불러오지 못했습니다. 다시 설정해 주세요." }
         }

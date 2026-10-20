@@ -51,6 +51,11 @@ try:
             check('wrong_token_rejected:'+route, request(route, 'invalid-review-token', b'{}' if 'paper' in route else None)[0] == 401)
         code, _, shell = request('/')
         check('menu_assets_linked_in_html', code == 200 and '/workspace-navigation.js' in shell and '/workspace-navigation.css' in shell)
+        if (stage/'public/workspace-design.css').is_file():
+            for route, mime, marker in [('/workspace-design.css','text/css','--hero-glow'),('/kstock-mark.svg','image/svg+xml','<svg')]:
+                code, headers, text = request(route)
+                check('design_asset:'+route, code == 200 and mime in headers.get('Content-Type','') and marker in text)
+            check('responsive_design_linked', '/workspace-design.css' in shell and '/kstock-mark.svg' in shell)
         valid = {'fromDate':'2026-09-01', 'toDate':'2026-09-03', 'initialCash':1000, 'positions':[{'market':'KR','ticker':'005930','buy':100,'quantity':1,'fee':0,'tax':0}]}
         code, headers, text = request('/api/v2/paper/performance', token, json.dumps(valid).encode())
         data = json.loads(text); pending = data.get('reason')

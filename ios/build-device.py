@@ -35,7 +35,7 @@ subprocess.run(['xcrun','--sdk','iphoneos','swiftc','-parse-as-library','-D',('K
 info={'CFBundleIdentifier':bundle,'CFBundleExecutable':'KStockLocal','CFBundleName':'K-Stock Local','CFBundlePackageType':'APPL','CFBundleVersion':'2','CFBundleShortVersionString':'0.1.1','MinimumOSVersion':'18.0','UIDeviceFamily':[1,2],'UILaunchScreen':{},'UIApplicationSceneManifest':{'UIApplicationSupportsMultipleScenes':False},'CFBundleSupportedPlatforms':['iPhoneOS'],'LSRequiresIPhoneOS':True,'KStockValidationURL':args.url,'NSAppTransportSecurity':{'NSAllowsLocalNetworking':True},'NSLocalNetworkUsageDescription':'같은 네트워크의 Mac에서 제공하는 K-Stock 개발 검증 화면과 공개 연구 자료에 연결합니다.','UISupportedInterfaceOrientations':['UIInterfaceOrientationPortrait','UIInterfaceOrientationLandscapeLeft','UIInterfaceOrientationLandscapeRight']}
 if args.https:
  info.pop('NSAppTransportSecurity',None);info.pop('NSLocalNetworkUsageDescription',None)
- info.update(CFBundleVersion='4',CFBundleShortVersionString='0.1.3',CFBundleName='K-Stock HTTPS')
+ info.update(CFBundleVersion='5',CFBundleShortVersionString='0.1.4',CFBundleName='K-Stock HTTPS')
 with (app/'Info.plist').open('wb') as f:plistlib.dump(info,f)
 shutil.copyfile(profile,app/'embedded.mobileprovision')
 if args.https:shutil.copyfile(root.parent/'scripts/physical-live-workflow.js',app/'LiveWorkflow.js')

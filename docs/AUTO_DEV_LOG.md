@@ -1634,3 +1634,11 @@ src/v2/current_capital.js, current_research.js, current_collection_io.js, curren
 - 최종 전체941/Android계약4/브라우저29 PASS. CI는 master브랜치필터로 작업브랜치 실행0/NOT RUN. 이번 실제 물리기기 재실행은 NOT RUN이며 이전16개를 새실행으로 표현하지 않는다. 새 공식원천 수집/가격검증/스토어출시 완료가 아니다.
 
 ---
+
+# 5번 시안 기반 반응형 UI/UX 재구성 — 2026-10-20 KST
+
+- 사용자 제공 ARVIA5번의 보라/라벤더/빛·여백을 참고해 KSTOCK 자체 SVG표식, 세리프제목, 네이비본문과 연구우선 홈을 구성. 외부 이미지·웹폰트 추가 없음. CSS디자인 토큰을 별도정리하고 라이트/다크·모바일/태블릿/데스크톱 대응. 모바일 정상웹화면의 Android샘플버튼 숨김, 양OS연결도구모음 축소. 로컬Mac필수라는 오래된 문구 수정.
+- Chrome217조합(7폭×2테마×15화면+7글자2배확대) PASS/가로넘침0/axe WCAG태그위반0/런타임오류0. 데스크톱홈ID우선순위 수정후 영향폭1000/1024/1440의 라이트/다크/확대9개추가 PASS. 메뉴29 PASS. 저대비 운영패널/다크인물선택 수정, 최초 실패는 최종PASS로 덮어쓰지 않고 수정내역 기록. docs/KSTOCK_UIUX_VIOLET_REVIEW.md.
+- 최종 회귀941/Android4 PASS (master-qa-20261020012340763.json), 양네이티브동일서명빌드·설치 PASS. Android2.6.8(268)/iOS0.1.4(5) 대상. source/asset/backend/auth 보존. 후보·운영전환 후 실제기기 검증은 후속기록 참조. VoiceOver/TalkBack 수동전체검토/기기전체범위 미실행. 금융근거HOLD/실거래OFF 유지.
+
+---

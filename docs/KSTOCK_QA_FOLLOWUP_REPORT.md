@@ -1,3 +1,11 @@
+# 5번 시안 기반 반응형 UI/UX 재구성 — 2026-10-20 KST
+
+- 사용자 제공 ARVIA5번의 보라/라벤더/빛·여백을 참고해 KSTOCK 자체 SVG표식, 세리프제목, 네이비본문과 연구우선 홈을 구성. 외부 이미지·웹폰트 추가 없음. CSS디자인 토큰을 별도정리하고 라이트/다크·모바일/태블릿/데스크톱 대응. 모바일 정상웹화면의 Android샘플버튼 숨김, 양OS연결도구모음 축소. 로컬Mac필수라는 오래된 문구 수정.
+- Chrome217조합(7폭×2테마×15화면+7글자2배확대) PASS/가로넘침0/axe WCAG태그위반0/런타임오류0. 데스크톱홈ID우선순위 수정후 영향폭1000/1024/1440의 라이트/다크/확대9개추가 PASS. 메뉴29 PASS. 저대비 운영패널/다크인물선택 수정, 최초 실패는 최종PASS로 덮어쓰지 않고 수정내역 기록. docs/KSTOCK_UIUX_VIOLET_REVIEW.md.
+- 최종 회귀941/Android4 PASS (master-qa-20261020012340763.json), 양네이티브동일서명빌드·설치 PASS. Android2.6.8(268)/iOS0.1.4(5) 대상. source/asset/backend/auth 보존. 후보·운영전환 후 실제기기 검증은 후속기록 참조. VoiceOver/TalkBack 수동전체검토/기기전체범위 미실행. 금융근거HOLD/실거래OFF 유지.
+
+---
+
 # 연구 상태 보강 운영 반영 완료 — 2026-10-20 KST
 
 - 제품 커밋 d1a0c458d7042581a26b4daccce340f17df3c490 / 작업브랜치 push 완료. sourceMatchesCommit=true인 review-f5894b1cf096c9f3/167파일, archiveSHA951a7271c38080a3f411500c2800b6674e16e712887c8b541950d34e86ffd913 생성. 원격격리설치·런타임24 PASS 뒤 이전 review-c8624b74d51f4584에서 전환. 환경파일·current/data 보존, 기존unit백업, 자동복원준비, 롤백미실행.

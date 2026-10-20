@@ -41,6 +41,9 @@ try:
  health=json.loads(body);assert health.get('brokerEnabled') is False and health.get('liveTrading') is False;checks.append('health_trading_off')
  for route,marker in [('/','paper-portfolio'),('/app.js','requestToken'),('/workspace-navigation.js','availableGroups'),('/research-progress.js','newOfficialDocuments'),('/privacy.html','Keychain')]:
   code,_,body=request(route);assert code==200 and marker in body;checks.append(route)
+ if (stage/'public/workspace-design.css').is_file():
+  code,_,body=request('/workspace-design.css');assert code==200 and '--hero-glow' in body;checks.append('responsive_design_css')
+  code,_,body=request('/kstock-mark.svg');assert code==200 and '<svg' in body;checks.append('brand_svg')
  assert request('/api/v2/research/dashboard')[0]==401;checks.append('anonymous_401')
  code,_,body=request('/api/v2/research/dashboard',auth=True);dashboard=json.loads(body);assert code==200 and dashboard.get('success') is True and dashboard.get('recommendationStatus')=='HOLD' and dashboard.get('summary',{}).get('researchEvents',0)>0;checks.append('authenticated_saved_research_hold')
  code,_,body=request('/api/v2/research/progress',auth=True);progress=json.loads(body);assert code==200 and progress.get('sourceCollection')=='NOT_RUN' and progress.get('newOfficialDocuments')==0;checks.append('task_completion_not_source_collection')
