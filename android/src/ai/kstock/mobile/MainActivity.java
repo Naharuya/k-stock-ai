@@ -42,7 +42,7 @@ public class MainActivity extends Activity {
   if(old!=null&&!old.equals(migrated))notifications.edit().putString("server",migrated).apply();
   try(InputStream in=getAssets().open("native-fetch.js")){ByteArrayOutputStream out=new ByteArrayOutputStream();byte[] b=new byte[4096];int n;while((n=in.read(b))!=-1)out.write(b,0,n);bridgeScript=out.toByteArray();}catch(Exception ignored){bridgeScript=new byte[0];}
   LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(16,12,16,8);root.setBackgroundColor(Color.rgb(247,246,251));
-  if(Build.VERSION.SDK_INT>=30){getWindow().setDecorFitsSystemWindows(false);root.setOnApplyWindowInsetsListener((v,insets)->{android.graphics.Insets b=insets.getInsets(WindowInsets.Type.systemBars());v.setPadding(b.left+16,b.top+12,b.right+16,b.bottom+8);return insets;});}
+  if(Build.VERSION.SDK_INT>=30){getWindow().setDecorFitsSystemWindows(false);root.setOnApplyWindowInsetsListener((v,insets)->{android.graphics.Insets b=insets.getInsets(WindowInsets.Type.systemBars());v.setPadding(b.left+16,b.top+12,b.right+16,b.bottom+8);return WindowInsets.CONSUMED;});}
   LinearLayout toolbar=new LinearLayout(this);toolbar.setGravity(android.view.Gravity.CENTER_VERTICAL);root.addView(toolbar,new LinearLayout.LayoutParams(-1,-2));
   status=new TextView(this);status.setTextSize(12);status.setTextColor(Color.rgb(32,36,61));status.setMaxLines(3);status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);toolbar.addView(status,new LinearLayout.LayoutParams(0,-2,1));
   LinearLayout buttons=new LinearLayout(this);toolbar.addView(buttons);

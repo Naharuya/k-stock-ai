@@ -17,3 +17,7 @@
 - 자동 검사 통과는 WCAG 인증이나 실제 VoiceOver/TalkBack 전체 조작 완료가 아니다. 색각/스크린리더의 수동 전체 검토와 전체 기기 종류는 별도 범위다.
 
 로컬 화면·검증 결과: `data/v2/verification/workspace-design/`, `workspace-design-desktop/`. 실행 도구: `scripts/verify-workspace-design.cjs`. 운영 자산 검증에 새 CSS/SVG 확인을 추가했다. 사용자 데이터·인증정보·금융원천을 바꾸지 않는다.
+
+## 실제 기기 검토 후 추가 보정
+
+Galaxy의 시스템 여백을 native root에 적용한 뒤 WebView로 다시 전달해 하단 여백이 중복되는 점을 보정했다(API30이상에서 root가 적용 후 WindowInsets.CONSUMED 반환). 모바일 소개 영역을 더 줄이고 처음사용안내를 요약수치 아래로 옮겼다. 변경된 홈은7폭·양테마·확대21조합 PASS (`workspace-design-home-final/report.json`). 초기217전체검사/9개데스크톱 보정/21개홈 보정은 서로 다른 실행이며 단일247개 고유조합으로 표현하지 않는다.
