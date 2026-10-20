@@ -1,3 +1,49 @@
+# 후속6항목 개발·운영·실기기 확인 — 2026-10-20 KST
+
+사용자6번까지 진행 승인에 따라 아래 기능을 구현·푸시·운영 반영했다. 기능 코드와 실제 금융 검증/장기 관측/플랫폼 푸시 범위를 구분하며, 모든 시장 검증이 끝났다는 의미가 아니다.
+
+| 요청 | 이번 실제 반영 | 남은 범위 |
+| --- | --- | --- |
+| 1 거래일·기업행동 | 미국2026 예정 휴장/조기종료, 국내2026-10 공지 범위 대조. 휴장일 가격/예정일 누락/미완료 일봉/전일 종가대비 시가30% 이상 단절 시 조건·재생 보류. 알려진 긴 휴장과 조기종료·DST 경계 처리 | 국내 다른 달, 비상휴장·종목별 거래정지, 분할·배당의 독립 대사 미완료. corporateActions=NOT_INDEPENDENTLY_RECONCILED, independentVerification=false |
+| 2 매매 판단 카드 | 종가/고가돌파/평균/거래량 조건별 충족 여부, 검토기간, 다음 시가 범위 이탈·자료 만료 무효화, 갭·유동성·원천 검토 표시 | 실증된 추천 아님; 기존HOLD 유지 |
+| 3 보유 위험 관리 | 평균가/현재가에서 손절 기준까지 금액, 같은통화 총자산 대비 비중, 손실예산·투자한도로 제한한 정수 신규 수량. 신규 진입은 최신 기준종가 사용 | 비용·환율·갭·실제 체결 미반영, 손실 상한 보장 아님 |
+| 4 실적·공시 일정 | 삼성전자/Microsoft 고정 공식IR2곳 하루1회 조회·해시·수신시각·시간정밀도 보존. 기존 공시와 별도 표시.7일 경과 숨김, 시각 명시 일정은 시각 경과 후 예정목록 제외 | 전체 발행사 아님. 미연결·파싱실패는 일정 없음으로 확정하지 않음 |
+| 5 전략 평가 | 100일봉에서40일 준비 후 앞 기간/마지막20일 분리 비교, 비용·동일종목 보유 비교. 경계포지션 이월/최적화 없음. 비용 외 필드가 원천 bars/평가창을 덮어쓰지 못하도록 차단 | 이미 본 과거자료이며 독립 미관측 검증 아님. 공식 지수·기업행동·생존편향·긴 평가기간 실증 미완료. promotionStatus=HOLD |
+| 6 조건 알림 | 명시 시작/중지/기록삭제. 화면 활성 중3분마다 최대3종목 관심·보유 순환, 조건 변화·자료 부족 알림, 동일 상태·가격일1시간 중복 방지, 메모리20개 제한 | 앱 종료/숨김 중 백그라운드 푸시·OS알림은 미구현. 푸시 토큰/새 외부 사업자 없음 |
+
+달력은 [NYSE 예정 일정](https://www.nyse.com/trade/hours-calendars), [Nasdaq2026 일정](https://www.nasdaqtrader.com/Trader.aspx?id=Calendar), [KRX10월 휴장 공지](https://trn.krx.co.kr/index.jsp)의 확인 범위에 한정한다. 예정 일정 대조가 비상휴장·개별 거래정지 확인을 대신하지 않는다. 실제 수집한 [삼성전자IR 일정](https://www.samsung.com/global/ir/ir-events-presentations/events/)과 [MicrosoftIR](https://www.microsoft.com/en-us/investor/default)은 공개 페이지에서 명시된 날짜만 추출했으며 미래 분기를 추정하지 않았다. 삼성전자10월29일10시KST, Microsoft10월28일(시각 미확인) 공지를 운영 API에서 확인했다.
+
+## 배포·운영
+
+- 최종 제품 커밋 f9c2d4a (선행1ba55b1 포함), origin/auto/kstock-development-20260930 푸시. 활성 후보 review-9c463470ec0bc5b2,178파일, archive SHA256 44833e5b138452938fe06f8ca24a67fc294bc440641053611b9f5f52ddf651b4. 직전 review-8f6eeb772c7b07da도 검증/활성 이력 보존. 기존 환경·데이터·복원 경로 유지, 금융 키의 서버 복사/주문 활성화 없음.
+- 앞선 SSH신규접속 실패는 이번 재검사에서 접속 성공·서비스active·운영18880루프백 확인. 시세 연결 스크립트에 초기접속10초/1회 제한 추가 후 전용LaunchAgent 재실행, 기존 재접속과 함께 적용. 실제 원격게이트웨이health 및 운영API PASS. 일시 거부 원인을 단정하거나 영구 연결 보장을 하지 않는다.
+- 갱신한 시간별 runner 실제 실행:20261020094626581-trading-result.json. 시세는 HOURLY_BUDGET로 SKIPPED(추가 수집 성공이라고 하지 않음), 일정 확인 실행, 공개44파일 동기화·보고전달 성공, deliveryAttempts1. 동기화 실패상위BLOCKED와 브리지전달 최대3회 재시도 유지. 구체 업무지시도 기존 ARI_TO_JINI 브리지로 전달 성공(worker-order-delivery.json).
+- 총자산·손실예산·투자한도는 화면 메모리 계산이며 전송/저장 없음. 알림은 기존 인증 계산API만 사용하고 알림기록은 메모리. 보유 저장 선택/삭제 및 인증 격리는 유지. 개인정보·기획7-3·맥미니 작업지시를 실제 흐름에 맞췄다.
+
+## 검증 근거
+
+증거 기본위치는 data/v2/verification/이며 금융값·인증값을 로그에 출력하지 않았다.
+
+| 검사 | 실제 결과 |
+| --- | --- |
+| 최종 전체 오프라인 회귀 | 991 PASS / 0 FAIL; /tmp/kstock-six-final-offline.log |
+| 새 거래일·일정·위험·알림·기간/입력방어 테스트 | trading_six.test.js12개 포함. 동종 전용 테스트 초기실패는 부동소수 허용오차/복수 차단사유 순서에 맞춰 수정 후 통과 |
+| Python 공개스냅샷 | 4 PASS. 일정의 임의 필드·호스트·발행사 거부, 신규 checkedAt/백업 처리 포함 |
+| 실제 브라우저 기능 흐름 | 33 PASS, trading-ui/workflow.json. 합성 API + 실제 로컬 JSON 계약; 위험 계산/저장 안함/예정 일정/알림 시작·중지·삭제 포함 |
+| 반응형·테마·접근성 | 33 PASS, workspace-six/report.json;320/390/1440×5화면×라이트다크 및 확대. 최종 두 로직 수정 전 동일 레이아웃 검사 |
+| 최종 후보 격리·운영 전환 후 | 36 / 20 PASS, trading-six/final-isolated.json / final-activation.json |
+| 운영 실제자료 확인 | 7 PASS, trading-six/final-live.json. 삼성전자/MSFT 일정·명시 검증상태·분리평가·비용입력 방어·게이트웨이health |
+| 최종 운영 Android | 23 PASS, trading-six/final-android-physical.json |
+| Android 새 화면 | 5 PASS, trading-six/android-new-ui.json. 실제 달력 상태·위험 계산·공식 일정·알림 범위·넘침. 사용자 저장값 변경 없음 |
+| 최종 운영 iPhone | 28 PASS, trading-six/final-ios-physical.json; 인증과 분리한Keychain 계약 포함. 새 위험/알림 입력의 iPhone 별도 물리조작은 미실행이며 브라우저 검사와 구분 |
+| 공개 HTTPS·새자산·무인증401 | PASS, trading-six/final-public.json |
+
+양기기는 최종 전환 이후 checkedAt을 검증했고 테스트 합성 모의기록을 정리한 뒤 일반 실행으로 복원했다. Android디버그forward 제거. 기존 사용자/에이전트의 backend 보고서 변경·continuous 보고서·tests/diff는 보존하고 이번 커밋에서 제외했다. secrets 패턴은 패키저 검사 통과, diff check PASS.
+
+전체 전수 금융 검증·독립 기업행동/거래일 대사·실제 미관측 장기 성과·공식지수 비교·공급자 재배포 권한·스토어 출시 Gate는 미완료다. 추천HOLD / RULE_SIMULATION / 실주문OFF를 유지한다.
+
+---
+
 # 과거 재생 비교·거래량 검증 및 시간별 보고 보강 — 2026-10-20 KST
 
 - 동일 종목 단순 보유 비교를 과거 모의 재생 API/화면에 추가했다. 전략과 동일한 평가기간(40일 준비구간 이후)·편도 수수료·매도세금·편도 슬리피지 가정을 적용하며 차이는 퍼센트포인트로 표시한다. 공식 지수/배당 포함 성과/별도 기간 검증이 아니다. 준비 일봉 수·평가 일봉 수와 독립 검증 false를 API에 명시했다.
