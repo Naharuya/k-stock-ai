@@ -32,3 +32,46 @@ enum KStockAccessCredential {
         try save(token)
     }
 }
+
+// Public instrument/optional user-holding storage is separate from authentication.
+import WebKit
+final class KStockTradingStorageBridge: NSObject, WKScriptMessageHandlerWithReply {
+    private static let service="ai.kstock.https.trading-storage"
+    private static let allowed=["kstock-trading-watch-v1","kstock-user-holdings-v1"]
+    static func valid(_ text:String,key:String)->Bool {
+        guard allowed.contains(key),text.utf8.count<=50000,let data=text.data(using:.utf8),let rows=(try? JSONSerialization.jsonObject(with:data)) as? [[String:Any]],rows.count<=100 else{return false}
+        return rows.allSatisfy { row in
+            let holding=key=="kstock-user-holdings-v1"
+            let fields:Set<String>=holding ? ["market","symbol","name","exchange","currency","quantity","averageCost"] : ["market","symbol","name","exchange","currency"]
+            guard Set(row.keys).isSubset(of:fields),let market=row["market"] as? String,["KR","US"].contains(market),let symbol=row["symbol"] as? String,symbol.range(of:market=="KR" ? "^[0-9][A-Z0-9]{5}$":"^[A-Z][A-Z0-9.]{0,9}$",options:.regularExpression) != nil,let exchange=row["exchange"] as? String,(market=="KR" ? exchange=="KRX":["NAS","NYS","AMS"].contains(exchange)),row["currency"] as? String == (market=="KR" ? "KRW":"USD"),let name=row["name"] as? String,!name.isEmpty,name.count<=150 else{return false}
+            if holding {
+                for (key,limit) in [("quantity",1e9),("averageCost",1e12)] {
+                    guard let n=row[key] as? NSNumber,CFGetTypeID(n) != CFBooleanGetTypeID(),n.doubleValue.isFinite,n.doubleValue>0,n.doubleValue<=limit else{return false}
+                }
+            }
+            return true
+        }
+    }
+    private func query(_ key:String)->[String:Any] {[kSecClass as String:kSecClassGenericPassword,kSecAttrService as String:Self.service,kSecAttrAccount as String:"https://kstock.ai.kr/"+key]}
+    func userContentController(_ userContentController:WKUserContentController,didReceive message:WKScriptMessage,replyHandler:@escaping(Any?,String?)->Void) {
+        let origin=message.frameInfo.securityOrigin
+        guard message.frameInfo.isMainFrame,origin.protocol=="https",origin.host=="kstock.ai.kr",[0,443].contains(origin.port),let body=message.body as? [String:Any],let key=body["key"] as? String,Self.allowed.contains(key),let operation=body["operation"] as? String else{replyHandler(nil,"STORAGE_SCOPE_REJECTED");return}
+        var q=query(key)
+        switch operation {
+        case "get":
+            q[kSecReturnData as String]=true;q[kSecMatchLimit as String]=kSecMatchLimitOne
+            var result:CFTypeRef?;let code=SecItemCopyMatching(q as CFDictionary,&result)
+            if code==errSecItemNotFound {replyHandler(NSNull(),nil);return}
+            guard code==errSecSuccess,let data=result as? Data,let value=String(data:data,encoding:.utf8),Self.valid(value,key:key) else{replyHandler(nil,"STORAGE_READ_FAILED");return}
+            replyHandler(value,nil)
+        case "set":
+            guard let value=body["value"] as? String,Self.valid(value,key:key) else{replyHandler(nil,"STORAGE_VALUE_REJECTED");return}
+            let data=Data(value.utf8);var code=SecItemUpdate(q as CFDictionary,[kSecValueData as String:data] as CFDictionary)
+            if code==errSecItemNotFound {q[kSecValueData as String]=data;q[kSecAttrAccessible as String]=kSecAttrAccessibleWhenUnlockedThisDeviceOnly;code=SecItemAdd(q as CFDictionary,nil)}
+            replyHandler(code==errSecSuccess ? true:nil,code==errSecSuccess ? nil:"STORAGE_WRITE_FAILED")
+        case "remove":
+            let code=SecItemDelete(q as CFDictionary);let ok=code==errSecSuccess||code==errSecItemNotFound;replyHandler(ok ? true:nil,ok ? nil:"STORAGE_DELETE_FAILED")
+        default:replyHandler(nil,"STORAGE_OPERATION_REJECTED")
+        }
+    }
+}

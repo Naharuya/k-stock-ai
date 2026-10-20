@@ -13,6 +13,11 @@
   check('krUsCurrencySeparated',kr.instrument.currency==='KRW'&&us.instrument.currency==='USD');check('ruleSimulationNotRecommendation',kr.strategy.policy.mode==='RULE_SIMULATION'&&kr.recommendationStatus==='HOLD'&&kr.orderExecution===false);
   const holding=await candidateRequest('/api/v2/trading/holding-review',true,{method:'POST',body:{market:'KR',symbol:'005930',holding:{averageCost:kr.quote.close,quantity:1}}});check('holdingReviewNoExecution',holding.strategy.holdingContext==='USER_ENTERED'&&holding.orderExecution===false);
   location.hash='trading-today';applyResearchScreen();for(let n=0;n<100&&!document.querySelector('#trading-home-detail .trading-price');n++)await new Promise(r=>setTimeout(r,100));check('newTradingHomeVisible',document.getElementById('trading-today').classList.contains('screen-active')&&!!document.querySelector('#trading-home-detail .trading-price'));
+  if(window.KStockTradingStorage){
+   const store=window.KStockTradingStorage;let denied=false;try{await store.getItem('kstock-auth-token');}catch{denied=true;}check('nativeStorageCannotReadCredentialKeys',denied);
+   let invalid=false;try{await store.setItem('kstock-trading-watch-v1',JSON.stringify([{market:'KR',symbol:'005930',exchange:'KRX',currency:'KRW',name:'QA',secret:'reject'}]));}catch{invalid=true;}check('nativeStorageRejectsExtraFields',invalid);
+   const before=await store.getItem('kstock-trading-watch-v1');if(before===null){try{const value=JSON.stringify([{market:'KR',symbol:'005930',exchange:'KRX',currency:'KRW',name:'QA synthetic'}]);await store.setItem('kstock-trading-watch-v1',value);check('nativeKeychainRoundTrip',await store.getItem('kstock-trading-watch-v1')===value);}finally{await store.removeItem('kstock-trading-watch-v1');}check('nativeKeychainTestDataDeleted',await store.getItem('kstock-trading-watch-v1')===null);}else check('existingNativeWatchDataPreserved',true);
+  }
   location.hash='stock-analysis';applyResearchScreen();check('stockWorkspace',byId('stock-analysis').classList.contains('screen-active'));
   location.hash='paper-portfolio';applyResearchScreen();
   const seed=KStockPaperBackup.serialize({positions:[{market:'KR',ticker:'005930',currency:'KRW',buy:100,quantity:2,fee:3,tax:2}],cashFlows:[],sales:[],dividends:[],initialCash:1000,fromDate:'2026-09-01',toDate:'2026-09-03'});

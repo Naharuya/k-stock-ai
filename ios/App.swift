@@ -4,7 +4,7 @@
 import UIKit
 import WebKit
 
-// Separate local validation and fixed HTTPS review modes. No native credential store or order bridge.
+// Fixed HTTPS review: separate credential/optional-data Keychain services, no order bridge.
 @main
 final class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, configurationForConnecting session: UISceneSession, options: UIScene.ConnectionOptions) -> UISceneConfiguration {
@@ -30,6 +30,9 @@ final class ResearchController: UIViewController, WKNavigationDelegate {
         let configuration = WKWebViewConfiguration()
         #if KSTOCK_HTTPS_PREVIEW
         configuration.websiteDataStore = .nonPersistent()
+        configuration.userContentController.addScriptMessageHandler(KStockTradingStorageBridge(),contentWorld:.page,name:"kstockTradingStorage")
+        let storageScript="window.KStockTradingStorage=Object.freeze({getItem:async key=>await window.webkit.messageHandlers.kstockTradingStorage.postMessage({operation:'get',key}),setItem:async(key,value)=>await window.webkit.messageHandlers.kstockTradingStorage.postMessage({operation:'set',key,value}),removeItem:async key=>await window.webkit.messageHandlers.kstockTradingStorage.postMessage({operation:'remove',key})});"
+        configuration.userContentController.addUserScript(WKUserScript(source:storageScript,injectionTime:.atDocumentStart,forMainFrameOnly:true))
         #endif
         return WKWebView(frame: .zero, configuration: configuration)
     }()
