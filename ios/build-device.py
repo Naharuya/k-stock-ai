@@ -31,11 +31,13 @@ for directory in [pathlib.Path.home()/'Library/MobileDevice/Provisioning Profile
 if len(profiles)!=1:raise SystemExit('EXACTLY_ONE_EXISTING_MATCHING_PROFILE_REQUIRED')
 profile, data, identity, prefix=profiles[0]
 sdk=subprocess.check_output(['xcrun','--sdk','iphoneos','--show-sdk-path'],text=True).strip()
-subprocess.run(['xcrun','--sdk','iphoneos','swiftc','-parse-as-library','-D',('KSTOCK_HTTPS_PREVIEW' if args.https else 'LOCAL_DEVICE_VALIDATION'),'-sdk',sdk,'-target','arm64-apple-ios18.0','-module-cache-path',str(build/'module-cache'),str(root/'App.swift'),str(root/'ServerPolicy.swift'),str(root/'AccessCredential.swift'),'-o',str(app/'KStockLocal'),'-framework','UIKit','-framework','WebKit'],check=True)
+subprocess.run(['xcrun','--sdk','iphoneos','swiftc','-parse-as-library','-D',('KSTOCK_HTTPS_PREVIEW' if args.https else 'LOCAL_DEVICE_VALIDATION'),'-sdk',sdk,'-target','arm64-apple-ios18.0','-module-cache-path',str(build/'module-cache'),str(root/'App.swift'),str(root/'ServerPolicy.swift'),str(root/'AccessCredential.swift'),str(root/'MarketAlerts.swift'),'-o',str(app/'KStockLocal'),'-framework','UIKit','-framework','WebKit'],check=True)
 info={'CFBundleIdentifier':bundle,'CFBundleExecutable':'KStockLocal','CFBundleName':'K-Stock Local','CFBundlePackageType':'APPL','CFBundleVersion':'2','CFBundleShortVersionString':'0.1.1','MinimumOSVersion':'18.0','UIDeviceFamily':[1,2],'UILaunchScreen':{},'UIApplicationSceneManifest':{'UIApplicationSupportsMultipleScenes':False},'CFBundleSupportedPlatforms':['iPhoneOS'],'LSRequiresIPhoneOS':True,'KStockValidationURL':args.url,'NSAppTransportSecurity':{'NSAllowsLocalNetworking':True},'NSLocalNetworkUsageDescription':'같은 네트워크의 Mac에서 제공하는 K-Stock 개발 검증 화면과 공개 연구 자료에 연결합니다.','UISupportedInterfaceOrientations':['UIInterfaceOrientationPortrait','UIInterfaceOrientationLandscapeLeft','UIInterfaceOrientationLandscapeRight']}
 if args.https:
  info.pop('NSAppTransportSecurity',None);info.pop('NSLocalNetworkUsageDescription',None)
- info.update(CFBundleVersion='6',CFBundleShortVersionString='0.1.5',CFBundleName='K-Stock HTTPS')
+ info.update(CFBundleVersion='7',CFBundleShortVersionString='0.1.6',CFBundleName='K-Stock HTTPS')
+info['UIBackgroundModes']=['fetch']
+info['BGTaskSchedulerPermittedIdentifiers']=[info['CFBundleIdentifier']+'.market-alerts']
 with (app/'Info.plist').open('wb') as f:plistlib.dump(info,f)
 shutil.copyfile(profile,app/'embedded.mobileprovision')
 if args.https:shutil.copyfile(root.parent/'scripts/physical-live-workflow.js',app/'LiveWorkflow.js')

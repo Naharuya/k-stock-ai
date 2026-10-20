@@ -6,6 +6,8 @@ const BASE_URLS = {
 };
 
 const OPERATIONS = {
+  'decision-kr-movers':{path:'/uapi/domestic-stock/v1/ranking/fluctuation',transactionId:'FHPST01700000'},
+  'decision-us-movers':{path:'/uapi/overseas-stock/v1/ranking/updown-rate',transactionId:'HHDFS76290000'},
   'decision-daily-prices': {path:'/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice',transactionId:'FHKST03010100'},
   'decision-us-daily-prices': {path:'/uapi/overseas-price/v1/quotations/dailyprice',transactionId:'HHDFS76240000'},
   'nonapple-daily-prices': {path:'/uapi/overseas-price/v1/quotations/dailyprice',transactionId:'HHDFS76240000'},
@@ -93,13 +95,21 @@ export function createKisRequest({
     if (!appKey || !appSecret) {
       throw new Error('KIS_APP_KEY and KIS_APP_SECRET are required.');
     }
-    if (typeof symbol !== 'string' || (operation === 'decision-daily-prices' ? !/^[0-9][A-Z0-9]{5}$/.test(symbol) : operation === 'decision-us-daily-prices' ? !/^[A-Z][A-Z0-9.]{0,9}$/.test(symbol) : operation === 'nonapple-daily-prices' ? symbol!=='MSFT' : operation === 'us-daily-prices' ? symbol!=='AAPL' : operation === 'index-daily' ? !['0001','1001'].includes(symbol) : !/^\d{6}$/.test(symbol))) {
+    if (typeof symbol !== 'string' || (['decision-kr-movers','decision-us-movers'].includes(operation) ? symbol!=='MARKET' : operation === 'decision-daily-prices' ? !/^[0-9][A-Z0-9]{5}$/.test(symbol) : operation === 'decision-us-daily-prices' ? !/^[A-Z][A-Z0-9.]{0,9}$/.test(symbol) : operation === 'nonapple-daily-prices' ? symbol!=='MSFT' : operation === 'us-daily-prices' ? symbol!=='AAPL' : operation === 'index-daily' ? !['0001','1001'].includes(symbol) : !/^\d{6}$/.test(symbol))) {
       throw new Error('A six-digit KIS stock code is required');
     }
 
     const definition = OPERATIONS[operation];
     const url = new URL(definition.path, baseUrl);
-    if(operation==='decision-us-daily-prices'||operation==='decision-daily-prices') {
+    if(['decision-kr-movers','decision-us-movers'].includes(operation)){
+      if(!['UP','DOWN'].includes(params.direction))throw createRequestError('Mover direction invalid','MOVERS_SCOPE_INVALID');
+      if(operation==='decision-us-movers'){
+        if(!['NAS','NYS','AMS'].includes(params.exchange))throw createRequestError('Mover exchange invalid','MOVERS_SCOPE_INVALID');
+        for(const [k,v]of Object.entries({EXCD:params.exchange,NDAY:'0',GUBN:params.direction==='UP'?'1':'0',VOL_RANG:'0',AUTH:'',KEYB:''}))url.searchParams.set(k,v);
+      }else{
+        for(const [k,v]of Object.entries({FID_COND_MRKT_DIV_CODE:'J',FID_COND_SCR_DIV_CODE:'20170',FID_INPUT_ISCD:'0000',FID_RANK_SORT_CLS_CODE:params.direction==='UP'?'0':'1',FID_INPUT_CNT_1:'0',FID_PRC_CLS_CODE:'0',FID_INPUT_PRICE_1:'',FID_INPUT_PRICE_2:'',FID_VOL_CNT:'',FID_TRGT_CLS_CODE:'0',FID_TRGT_EXLS_CLS_CODE:'0',FID_DIV_CLS_CODE:'0',FID_RSFL_RATE1:'',FID_RSFL_RATE2:''}))url.searchParams.set(k,v);
+      }
+    }else if(operation==='decision-us-daily-prices'||operation==='decision-daily-prices') {
       const valid=d=>typeof d==='string'&&/^\d{8}$/.test(d)&&Number.isFinite(Date.parse(`${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`))&&new Date(`${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`).toISOString().slice(0,10).replaceAll('-','')===d;
       const today=new Date(now()).toISOString().slice(0,10).replaceAll('-','');
       if(!valid(params.from)||!valid(params.to)||params.from>params.to||params.to>today||Date.parse(`${params.to.slice(0,4)}-${params.to.slice(4,6)}-${params.to.slice(6,8)}`)-Date.parse(`${params.from.slice(0,4)}-${params.from.slice(4,6)}-${params.from.slice(6,8)}`)>200*86400000)throw createRequestError('Decision date scope invalid','DATE_SCOPE_INVALID');

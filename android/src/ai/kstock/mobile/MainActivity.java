@@ -46,7 +46,7 @@ public class MainActivity extends Activity {
   LinearLayout toolbar=new LinearLayout(this);toolbar.setGravity(android.view.Gravity.CENTER_VERTICAL);root.addView(toolbar,new LinearLayout.LayoutParams(-1,-2));
   status=new TextView(this);status.setTextSize(12);status.setTextColor(Color.rgb(32,36,61));status.setMaxLines(3);status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);toolbar.addView(status,new LinearLayout.LayoutParams(0,-2,1));
   LinearLayout buttons=new LinearLayout(this);toolbar.addView(buttons);
-  button(buttons,"인증 설정",()->connectionSettings());button(buttons,"새로고침",()->openServer());
+  button(buttons,"알림",()->marketAlertSettings());button(buttons,"인증 설정",()->connectionSettings());button(buttons,"새로고침",()->openServer());
   sample=button(root,"샘플 분석 확인 (실제 종목 아님)",()->sampleAnalysis());sample.setVisibility(View.GONE);
   web=new WebView(this);root.addView(web,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);
   WebSettings settings=web.getSettings();settings.setJavaScriptEnabled(true);settings.setDomStorageEnabled(true);
@@ -58,7 +58,7 @@ public class MainActivity extends Activity {
   web.setWebViewClient(new WebViewClient(){
    @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest request){
     Uri uri=request.getUrl();
-    if("kstock".equals(uri.getScheme())){if("settings".equals(uri.getHost()))connectionSettings();else if("notifications".equals(uri.getHost()))notificationSettings();else if("retry".equals(uri.getHost()))openServer();return true;}
+    if("kstock".equals(uri.getScheme())){if("settings".equals(uri.getHost()))connectionSettings();else if("market-alerts".equals(uri.getHost()))marketAlertSettings();else if("notifications".equals(uri.getHost()))notificationSettings();else if("retry".equals(uri.getHost()))openServer();return true;}
     if(!request.isForMainFrame())return !ServerAddress.sameOrigin(server,uri.toString());
     if(ServerAddress.sameOrigin(server,uri.toString()))return false;
     if("https".equals(uri.getScheme()))try{startActivity(new Intent(Intent.ACTION_VIEW,uri));}catch(ActivityNotFoundException ignored){}
@@ -80,6 +80,7 @@ public class MainActivity extends Activity {
    @Override public void onReceivedHttpError(WebView view,WebResourceRequest request,WebResourceResponse reply){if(request.isForMainFrame())showState(ApiClient.status(reply.getStatusCode()));}
   });
   openServer();
+  SharedPreferences marketPrefs=getSharedPreferences("market-alerts",MODE_PRIVATE);if(marketPrefs.getBoolean("enabled",false))MarketAlertJob.enable(this,server,marketPrefs.getInt("threshold",5),marketPrefs.getBoolean("up",true),marketPrefs.getBoolean("down",true));
  }
  private Button button(LinearLayout parent,String text,Runnable action){Button b=new Button(this);b.setText(text);b.setTextSize(12);b.setTextColor(Color.rgb(81,60,150));b.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(240,236,250)));b.setOnClickListener(v->action.run());parent.addView(b);return b;}
  private WebResourceResponse response(ApiClient.Reply r){Map<String,String> headers=new HashMap<>(r.headers);headers.put("Cache-Control","no-store");return new WebResourceResponse(r.type.split(";")[0],"UTF-8",r.code,"Response",headers,new ByteArrayInputStream(r.bytes));}
@@ -111,10 +112,15 @@ public class MainActivity extends Activity {
     if(!connected){showState(health.state==ApiClient.State.CONNECTED?ApiClient.State.FAILED:health.state);return;}
     status.setText(authenticated?"서버 연결됨 · API 인증은 요청 시 확인합니다.":"서버는 연결되었지만 인증이 필요합니다. 외부접속 토큰을 설정해 주세요.");
     sample.setVisibility(allowsSample&&!(page.type.contains("text/html")&&page.state==ApiClient.State.CONNECTED)?View.VISIBLE:View.GONE);
-    if(page.type.contains("text/html")&&page.state==ApiClient.State.CONNECTED)web.loadUrl(server+"/?source=android");
+    if(page.type.contains("text/html")&&page.state==ApiClient.State.CONNECTED)web.loadUrl(server+"/?source=android"+(getIntent().getBooleanExtra("kstock_open_movers",false)?"#market-movers":""));
     else web.loadDataWithBaseURL(null,"<html lang='ko'><meta name='viewport' content='width=device-width,initial-scale=1'><body style='font:17px sans-serif;padding:20px'><h2>K-Stock AI</h2><p>운영 API 서버에 연결했습니다.</p><p>현재 서버는 기존 앱의 웹 화면을 제공하지 않습니다. 연결 설정에서 외부접속 토큰을 저장할 수 있습니다.</p><p>샘플 분석은 연결 검증용 가상 데이터입니다. 실제 종목 조회·분석 화면은 서버의 해당 기능 제공 후 사용할 수 있습니다.</p><p>브로커·실거래는 비활성 상태로 유지됩니다.</p></body></html>","text/html","UTF-8",null);
    });
   });
+ }
+ private void marketAlertSettings(){
+  try{if(!ServerAddress.DEFAULT.equals(server)||vault.read(server).isEmpty()){connectionSettings();return;}}catch(Exception e){connectionSettings();return;}
+  if(Build.VERSION.SDK_INT>=33&&checkSelfPermission("android.permission.POST_NOTIFICATIONS")!=android.content.pm.PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"},264);return;}
+  SharedPreferences p=getSharedPreferences("market-alerts",MODE_PRIVATE);LinearLayout form=new LinearLayout(this);form.setOrientation(LinearLayout.VERTICAL);form.setPadding(32,8,32,8);TextView text=new TextView(this);text.setText("상태: "+(p.getBoolean("enabled",false)?"예약됨":"꺼짐")+"\n화면이 꺼져도 OS가 허용할 때 조회합니다. 최소15분 단위 예약이며 절전·강제종료로 지연될 수 있습니다. 국내·미국 공급자 등락률 상위 각10개 중 설정 % 이상을 알립니다. 같은 종목·방향은1시간 중복하지 않습니다.");form.addView(text);EditText threshold=new EditText(this);threshold.setInputType(InputType.TYPE_CLASS_NUMBER);threshold.setText(String.valueOf(p.getInt("threshold",5)));threshold.setHint("등락률 기준 1~30 (%)");form.addView(threshold);CheckBox up=new CheckBox(this);up.setText("급상승 알림");up.setChecked(p.getBoolean("up",true));form.addView(up);CheckBox down=new CheckBox(this);down.setText("급하락 알림");down.setChecked(p.getBoolean("down",true));form.addView(down);AlertDialog dialog=new AlertDialog.Builder(this).setTitle("화면 꺼짐 알림 설정").setView(form).setNegativeButton("닫기",null).setNeutralButton("알림 끄기·기록 삭제",(d,w)->{MarketAlertJob.disable(this);Toast.makeText(this,"시장 알림을 끄고 설정·중복 기록을 삭제했습니다.",Toast.LENGTH_LONG).show();}).setPositiveButton("알림 켜기",null).create();dialog.setOnShowListener(d->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{int rate;try{rate=Integer.parseInt(threshold.getText().toString());}catch(Exception e){rate=0;}if(!MarketAlertJob.enable(this,server,rate,up.isChecked(),down.isChecked())){threshold.setError("1~30 및 하나 이상의 방향을 선택하세요. OS 예약 상태도 확인하세요.");return;}dialog.dismiss();Toast.makeText(this,"시장 알림을 예약했습니다. OS 실행 시각은 보장되지 않습니다.",Toast.LENGTH_LONG).show();}));dialog.show();
  }
  private void notificationSettings(){
   try{ServerAddress.normalize(server);if(vault.read(server).isEmpty()){showState(ApiClient.State.AUTH_REQUIRED);connectionSettings();return;}}catch(Exception ignored){connectionSettings();return;}
@@ -122,7 +128,7 @@ public class MainActivity extends Activity {
   BriefNotificationJob.schedule(this,server);
   Toast.makeText(this,"서버가 분석 알림 기능을 제공하는 경우 알림을 받을 수 있습니다.",Toast.LENGTH_LONG).show();
  }
- @Override public void onRequestPermissionsResult(int code,String[] permissions,int[] results){super.onRequestPermissionsResult(code,permissions,results);if(code==263&&results.length>0&&results[0]==android.content.pm.PackageManager.PERMISSION_GRANTED)notificationSettings();}
+ @Override public void onRequestPermissionsResult(int code,String[] permissions,int[] results){super.onRequestPermissionsResult(code,permissions,results);if(code==264&&results.length>0&&results[0]==android.content.pm.PackageManager.PERMISSION_GRANTED)marketAlertSettings();if(code==263&&results.length>0&&results[0]==android.content.pm.PackageManager.PERMISSION_GRANTED)notificationSettings();}
  private void sampleAnalysis(){
   final ApiClient current=client;if(current==null)return;sample.setEnabled(false);status.setText("샘플 API 인증 확인 중");final int epoch=generation;
   workers.execute(()->{ApiClient.Reply reply=current.request("/api/test-analysis","POST","{}");runOnUiThread(()->{
@@ -136,7 +142,7 @@ public class MainActivity extends Activity {
   EditText secret=new EditText(this);secret.setSingleLine(true);secret.setHint("외부접속 토큰 (비워두면 해당 서버의 저장값 유지)");secret.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);secret.setSaveEnabled(false);secret.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);form.addView(secret);
   Button useDefault=new Button(this);useDefault.setText("운영 기본 주소 사용");useDefault.setOnClickListener(v->address.setText(ServerAddress.DEFAULT));form.addView(useDefault);
   Button forget=new Button(this);forget.setText("현재 서버의 저장 토큰 삭제");
-  forget.setOnClickListener(v->{try{vault.forget(server);secret.setText("");status.setText("현재 서버의 기기 저장 토큰을 삭제했습니다. 다른 서버 토큰과 웹 화면의 별도 입력은 유지됩니다.");}catch(Exception ignored){status.setText("저장 토큰을 삭제하지 못했습니다. 기기 저장소 상태를 확인해 주세요.");}});form.addView(forget);
+  forget.setOnClickListener(v->{try{vault.forget(server);MarketAlertJob.disable(this);secret.setText("");status.setText("현재 서버의 기기 저장 토큰을 삭제했습니다. 다른 서버 토큰과 웹 화면의 별도 입력은 유지됩니다.");}catch(Exception ignored){status.setText("저장 토큰을 삭제하지 못했습니다. 기기 저장소 상태를 확인해 주세요.");}});form.addView(forget);
   AlertDialog dialog=new AlertDialog.Builder(this).setTitle("외부접속 설정").setMessage("기본 서버: https://kstock.ai.kr\n토큰은 기기에 암호화 저장하며, 서버 주소별로 구분합니다. 기존 사용자 지정 주소는 직접 변경하기 전까지 보존합니다.").setView(form).setNegativeButton("취소",null).setPositiveButton("저장 후 연결",null).create();
   dialog.setOnDismissListener(d->secret.setText(""));
   dialog.setOnShowListener(d->{dialog.getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{

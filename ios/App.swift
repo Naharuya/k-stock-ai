@@ -7,6 +7,12 @@ import WebKit
 // Fixed HTTPS review: separate credential/optional-data Keychain services, no order bridge.
 @main
 final class AppDelegate: UIResponder, UIApplicationDelegate {
+    func application(_ application:UIApplication,didFinishLaunchingWithOptions options:[UIApplication.LaunchOptionsKey:Any]?=nil)->Bool {
+        #if KSTOCK_HTTPS_PREVIEW
+        KStockMarketAlerts.register();KStockMarketAlerts.schedule();if KStockMarketAlerts.enabled{Task{_ = await KStockMarketAlerts.poll()}}
+        #endif
+        return true
+    }
     func application(_ application: UIApplication, configurationForConnecting session: UISceneSession, options: UIScene.ConnectionOptions) -> UISceneConfiguration {
         let config = UISceneConfiguration(name: "KStock", sessionRole: session.role)
         config.delegateClass = SceneDelegate.self
@@ -16,6 +22,11 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
 
 final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
+    func sceneDidEnterBackground(_ scene:UIScene){
+        #if KSTOCK_HTTPS_PREVIEW
+        KStockMarketAlerts.schedule()
+        #endif
+    }
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options: UIScene.ConnectionOptions) {
         guard let scene = scene as? UIWindowScene else { return }
         let window = UIWindow(windowScene: scene)
@@ -92,6 +103,7 @@ final class ResearchController: UIViewController, WKNavigationDelegate {
         access.accessibilityIdentifier="kstock.access.settings"
         access.addTarget(self,action:#selector(accessSettings),for:.touchUpInside)
         actions.addArrangedSubview(access)
+        let alerts=UIButton(type:.system);alerts.setTitle("알림",for:.normal);alerts.titleLabel?.font = .preferredFont(forTextStyle:.caption1);alerts.heightAnchor.constraint(greaterThanOrEqualToConstant:44).isActive=true;alerts.addTarget(self,action:#selector(marketAlertSettings),for:.touchUpInside);actions.addArrangedSubview(alerts)
         if ProcessInfo.processInfo.arguments.contains("--import-auth") {
             do { try KStockAccessCredential.importOnce() } catch { status.text="인증 설정을 불러오지 못했습니다. 다시 설정해 주세요." }
         }
@@ -99,6 +111,7 @@ final class ResearchController: UIViewController, WKNavigationDelegate {
         reload()
     }
     #if KSTOCK_HTTPS_PREVIEW
+    @objc private func marketAlertSettings(){KStockMarketAlerts.present(from:self)}
     @objc private func accessSettings() {
         let alert=UIAlertController(title:"운영 서버 인증",message:"토큰은 이 기기의 Keychain에 보관합니다. 삭제하면 자료 조회 인증이 해제됩니다.",preferredStyle:.alert)
         alert.addTextField { field in field.isSecureTextEntry=true;field.placeholder="외부접속 토큰";field.autocorrectionType = .no;field.autocapitalizationType = .none }
@@ -124,6 +137,9 @@ final class ResearchController: UIViewController, WKNavigationDelegate {
     }
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         guard let url = action.request.url else { decisionHandler(.cancel); return }
+        #if KSTOCK_HTTPS_PREVIEW
+        if url.scheme=="kstock",url.host=="market-alerts",action.navigationType == .linkActivated,let current=web.url,KStockServerPolicy.sameOrigin(current,home){KStockMarketAlerts.present(from:self);decisionHandler(.cancel);return}
+        #endif
         if KStockServerPolicy.sameOrigin(url, home) {
             decisionHandler(.allow)
         } else {

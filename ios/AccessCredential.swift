@@ -22,8 +22,10 @@ enum KStockAccessCredential {
             var q=query;q[kSecValueData as String]=data;q[kSecAttrAccessible as String]=kSecAttrAccessibleWhenUnlockedThisDeviceOnly
             let added=SecItemAdd(q as CFDictionary,nil);guard added==errSecSuccess else { throw NSError(domain:"KStockCredential",code:Int(added)) }
         } else if code != errSecSuccess { throw NSError(domain:"KStockCredential",code:Int(code)) }
+        try refreshBackgroundIfEnabled(token)
     }
-    static func forget() throws { let code=SecItemDelete(query as CFDictionary);guard code==errSecSuccess || code==errSecItemNotFound else { throw NSError(domain:"KStockCredential",code:Int(code)) } }
+    static func refreshBackgroundIfEnabled(_ token:String)throws{if KStockMarketAlerts.enabled{try KStockBackgroundCredential.save(token)}}
+    static func forget() throws { KStockMarketAlerts.disable();let code=SecItemDelete(query as CFDictionary);guard code==errSecSuccess || code==errSecItemNotFound else { throw NSError(domain:"KStockCredential",code:Int(code)) } }
     // Explicit operator provisioning only. Read once, delete before parsing, reject stale or wrong-origin input.
     static func importOnce() throws {
         let file=FileManager.default.urls(for:.documentDirectory,in:.userDomainMask)[0].appendingPathComponent("kstock-auth-import.json")
