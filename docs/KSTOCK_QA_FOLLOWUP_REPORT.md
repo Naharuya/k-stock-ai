@@ -1,3 +1,11 @@
+# iOS 홈 화면 앱 아이콘 적용 — 2026-10-20 KST
+
+기존 iOS 수동 빌드와 Xcode 프로젝트에 AppIcon 연결이 없어 홈 화면 아이콘이 누락돼 있었다. public/kstock-mark.svg의 기존 보라색/금색 심벌 형태를 불투명1024×1024 PNG로 만들고 Assets.xcassets/AppIcon으로 등록했다. 생성 소스 render-app-icon.swift를 보존했다. 수동 기기/시뮬레이터/HTTPS 미리보기 빌드가 공통 actool 도우미로 Assets.car 및 CFBundleIcons/iPad 설정을 포함하도록 연결하고 Xcode 리소스 단계도 추가했다.
+
+기기 빌드·기존프로필 서명 검증 PASS, Xcode KStockLocal 시뮬레이터 BUILD SUCCEEDED. 원본 PNG1024×1024/알파없음 확인 및 육안 검토. 실제 빌드의 iPhone AppIcon60x60/iPad AppIcon76x76 설정·PNG·Assets.car 확인. **iOS0.1.8(9)**를 기존 iPhone 동일ID에 업데이트 설치·일반실행 성공, 데이터 초기화 없음. 아이폰 홈 화면 자체의 캡처 검사는 수행하지 않았으며 설치·번들 검증과 구분한다. Android/서버 변경 없음. 기존 backend/continuous 보고서 및 tests/diff는 보존·커밋 제외.
+
+---
+
 # 매매 판단 후속 1~6 개발·운영 반영 — 2026-10-20 KST
 
 사용자가 승인한 6개 항목의 구현을 이어서 운영 및 기존 두 실기기에 반영했다. **전체 상장종목 분석 완료, 확정 추천 출시, 실제 수익 검증 또는 자연 백그라운드 알림 전달 완료를 의미하지 않는다.** 추천 HOLD·실주문 OFF를 유지한다.

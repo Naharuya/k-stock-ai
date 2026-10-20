@@ -1,4 +1,5 @@
 """Build a simulator-only local app; no signing account, credentials or downloads."""
+from app_icons import compile_app_icons
 import pathlib
 import plistlib
 import subprocess
@@ -19,6 +20,7 @@ info = {'CFBundleIdentifier': 'ai.kstock.ios.localvalidation', 'CFBundleExecutab
         'MinimumOSVersion': '18.0', 'UIDeviceFamily': [1, 2], 'UILaunchScreen': {},
         'NSAppTransportSecurity': {'NSAllowsLocalNetworking': True},
         'UISupportedInterfaceOrientations': ['UIInterfaceOrientationPortrait', 'UIInterfaceOrientationLandscapeLeft', 'UIInterfaceOrientationLandscapeRight']}
+info.update(compile_app_icons(root, app, 'iphonesimulator'))
 with (app / 'Info.plist').open('wb') as file:
     plistlib.dump(info, file)
 subprocess.run(['codesign', '--force', '--sign', '-', str(app)], check=True)
