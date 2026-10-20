@@ -3,13 +3,20 @@
 #endif
 import UIKit
 import WebKit
+import UserNotifications
 
 // Fixed HTTPS review: separate credential/optional-data Keychain services, no order bridge.
 @main
-final class AppDelegate: UIResponder, UIApplicationDelegate {
+final class AppDelegate: UIResponder, UIApplicationDelegate,UNUserNotificationCenterDelegate {
+    static var openMoversRequested=false
+    func userNotificationCenter(_ center:UNUserNotificationCenter,willPresent notification:UNNotification,withCompletionHandler completionHandler:@escaping(UNNotificationPresentationOptions)->Void){completionHandler([.banner,.list,.sound])}
+    func userNotificationCenter(_ center:UNUserNotificationCenter,didReceive response:UNNotificationResponse,withCompletionHandler completionHandler:@escaping()->Void){
+        if response.notification.request.content.userInfo["kstock-route"] as? String=="market-movers"{Self.openMoversRequested=true;DispatchQueue.main.async{for scene in UIApplication.shared.connectedScenes{if let windowScene=scene as? UIWindowScene,let controller=windowScene.windows.first(where:{$0.isKeyWindow})?.rootViewController as? ResearchController{controller.openMarketMoversIfRequested()}}}}
+        completionHandler()
+    }
     func application(_ application:UIApplication,didFinishLaunchingWithOptions options:[UIApplication.LaunchOptionsKey:Any]?=nil)->Bool {
         #if KSTOCK_HTTPS_PREVIEW
-        KStockMarketAlerts.register();KStockMarketAlerts.schedule();if KStockMarketAlerts.enabled{Task{_ = await KStockMarketAlerts.poll()}}
+        UNUserNotificationCenter.current().delegate=self;KStockMarketAlerts.register();KStockMarketAlerts.schedule();if KStockMarketAlerts.enabled{Task{_ = await KStockMarketAlerts.poll()}}
         #endif
         return true
     }
@@ -111,6 +118,7 @@ final class ResearchController: UIViewController, WKNavigationDelegate {
         reload()
     }
     #if KSTOCK_HTTPS_PREVIEW
+    func openMarketMoversIfRequested(){guard AppDelegate.openMoversRequested,!web.isLoading,let current=web.url,KStockServerPolicy.sameOrigin(current,home)else{return};AppDelegate.openMoversRequested=false;web.evaluateJavaScript("location.hash='market-movers';if(typeof applyResearchScreen==='function')applyResearchScreen();",completionHandler:nil)}
     @objc private func marketAlertSettings(){KStockMarketAlerts.present(from:self)}
     @objc private func accessSettings() {
         let alert=UIAlertController(title:"운영 서버 인증",message:"토큰은 이 기기의 Keychain에 보관합니다. 삭제하면 자료 조회 인증이 해제됩니다.",preferredStyle:.alert)
@@ -182,6 +190,7 @@ final class ResearchController: UIViewController, WKNavigationDelegate {
                     let code = try await js("return (await fetch('/api/v2/candidates',{headers:{Authorization:'Bearer '+sessionToken},cache:'no-store',redirect:'error'})).status;")
                     status.text=(code as? Int)==200 ? "운영 서버 인증됨" : (code as? Int)==401 ? "인증 만료·거절 · 인증 설정에서 갱신하세요" : "자료 서버 응답을 확인해 주세요"
                 } else { status.text="운영 화면 연결됨 · 자료 조회는 인증 설정이 필요합니다" }
+                openMarketMoversIfRequested()
                 if ProcessInfo.processInfo.arguments.contains("--live-workflow-check"), let source=Bundle.main.url(forResource:"LiveWorkflow",withExtension:"js") {
                     let script=try String(contentsOf:source,encoding:.utf8)
                     let result=try await js("return await " + script + ";")
