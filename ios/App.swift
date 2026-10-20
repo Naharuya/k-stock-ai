@@ -9,10 +9,11 @@ import UserNotifications
 @main
 final class AppDelegate: UIResponder, UIApplicationDelegate,UNUserNotificationCenterDelegate {
     static var openMoversRequested=false
+    static var openHoldingsRequested=false
     func userNotificationCenter(_ center:UNUserNotificationCenter,willPresent notification:UNNotification,withCompletionHandler completionHandler:@escaping(UNNotificationPresentationOptions)->Void){completionHandler([.banner,.list,.sound])}
     func userNotificationCenter(_ center:UNUserNotificationCenter,didReceive response:UNNotificationResponse,withCompletionHandler completionHandler:@escaping()->Void){
         #if KSTOCK_HTTPS_PREVIEW
-        if response.notification.request.content.userInfo["kstock-route"] as? String=="market-movers"{Self.openMoversRequested=true;DispatchQueue.main.async{for scene in UIApplication.shared.connectedScenes{if let windowScene=scene as? UIWindowScene,let controller=windowScene.windows.first(where:{$0.isKeyWindow})?.rootViewController as? ResearchController{controller.openMarketMoversIfRequested()}}}}
+        if ["market-movers","my-stocks"].contains(response.notification.request.content.userInfo["kstock-route"] as? String ?? ""){Self.openMoversRequested=true;Self.openHoldingsRequested=response.notification.request.content.userInfo["kstock-route"] as? String=="my-stocks";DispatchQueue.main.async{for scene in UIApplication.shared.connectedScenes{if let windowScene=scene as? UIWindowScene,let controller=windowScene.windows.first(where:{$0.isKeyWindow})?.rootViewController as? ResearchController{controller.openMarketMoversIfRequested()}}}}
         #endif
         completionHandler()
     }
@@ -120,7 +121,7 @@ final class ResearchController: UIViewController, WKNavigationDelegate {
         reload()
     }
     #if KSTOCK_HTTPS_PREVIEW
-    func openMarketMoversIfRequested(){guard AppDelegate.openMoversRequested,!web.isLoading,let current=web.url,KStockServerPolicy.sameOrigin(current,home)else{return};AppDelegate.openMoversRequested=false;web.evaluateJavaScript("location.hash='market-movers';if(typeof applyResearchScreen==='function')applyResearchScreen();",completionHandler:nil)}
+    func openMarketMoversIfRequested(){guard AppDelegate.openMoversRequested,!web.isLoading,let current=web.url,KStockServerPolicy.sameOrigin(current,home)else{return};AppDelegate.openMoversRequested=false;let route=AppDelegate.openHoldingsRequested ? "my-stocks":"market-movers";AppDelegate.openHoldingsRequested=false;web.evaluateJavaScript("location.hash='\(route)';if(typeof applyResearchScreen==='function')applyResearchScreen();",completionHandler:nil)}
     @objc private func marketAlertSettings(){KStockMarketAlerts.present(from:self)}
     @objc private func accessSettings() {
         let alert=UIAlertController(title:"운영 서버 인증",message:"토큰은 이 기기의 Keychain에 보관합니다. 삭제하면 자료 조회 인증이 해제됩니다.",preferredStyle:.alert)
@@ -148,6 +149,7 @@ final class ResearchController: UIViewController, WKNavigationDelegate {
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         guard let url = action.request.url else { decisionHandler(.cancel); return }
         #if KSTOCK_HTTPS_PREVIEW
+        if url.scheme=="kstock",url.host=="holding-alerts",action.navigationType == .linkActivated,let current=web.url,KStockServerPolicy.sameOrigin(current,home){KStockHoldingAlert.present(url,from:self);decisionHandler(.cancel);return}
         if url.scheme=="kstock",url.host=="market-alerts",action.navigationType == .linkActivated,let current=web.url,KStockServerPolicy.sameOrigin(current,home){KStockMarketAlerts.present(from:self);decisionHandler(.cancel);return}
         #endif
         if KStockServerPolicy.sameOrigin(url, home) {

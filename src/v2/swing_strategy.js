@@ -14,7 +14,8 @@ export function evaluateSwing({bars=[],asOf,holding=null,completedSessionDate=nu
  const atr14=tr.reduce((s,n)=>s+n,0)/14;
  if(!positive(atr14)||!positive(averageVolume)||!positive(last.close-atr14))return empty('VOLATILITY_OR_VOLUME_INVALID');
  const round=n=>Math.round(n*10000)/10000;
- let action=last.close>breakout&&last.close>sma20&&last.volume>averageVolume?'BUY_CONDITION_MET':'WAIT';
+ const checks=[{id:'BREAKOUT',passed:last.close>breakout,actual:last.close,threshold:round(breakout)},{id:'TREND',passed:last.close>sma20,actual:last.close,threshold:round(sma20)},{id:'VOLUME',passed:last.volume>averageVolume,actual:last.volume,threshold:round(averageVolume)}];
+ let action=checks.every(c=>c.passed)?'BUY_CONDITION_MET':'WAIT';
  let stop=last.close-atr14,target=last.close+2*atr14;
  if(holding){
   if(!positive(holding.averageCost)||!positive(holding.quantity)||holding.quantity>1e9)return empty('HOLDING_INVALID');
@@ -22,5 +23,5 @@ export function evaluateSwing({bars=[],asOf,holding=null,completedSessionDate=nu
   if(!positive(stop))return empty('HOLDING_RISK_LEVEL_INVALID');
   action=last.close<=stop?'EXIT_CONDITION_MET':last.close>=target?'REDUCE_CONDITION_MET':last.close<sma20?'RISK_REVIEW':'HOLD_CONDITION_MET';
  }
- return {policy,action,reason:holding?'USER_COST_AND_CURRENT_ATR_RECALCULATED':'CLOSE_BREAKOUT_TREND_VOLUME_RULE',entry:round(holding?holding.averageCost:last.close),stop:round(stop),target:round(target),reference:{date:last.date,close:last.close},metrics:{sma20:round(sma20),prior20High:round(breakout),atr14:round(atr14),averageVolume:round(averageVolume)},holdingContext:holding?'USER_ENTERED':'NONE',execution:'NEXT_SESSION_CONDITIONAL',validUntil:new Date(completedSessionDate===last.date?now+86400000:Math.min(now+86400000,Date.parse(last.date)+4*86400000)).toISOString(),warnings:['SIMULATION_NOT_RECOMMENDATION','LEVELS_NOT_GUARANTEED_FILLS','NO_PROFIT_PROBABILITY','SESSION_CALENDAR_NOT_INDEPENDENTLY_VERIFIED',...(holding?['COST_BASED_LEVELS_RECALCULATE_WITH_ATR_NOT_A_FIXED_STOP']:[])]};
+ return {policy,action,checks,holdingPeriod:'DAYS_TO_WEEKS_NOT_FIXED',reason:holding?'USER_COST_AND_CURRENT_ATR_RECALCULATED':'CLOSE_BREAKOUT_TREND_VOLUME_RULE',entry:round(holding?holding.averageCost:last.close),stop:round(stop),target:round(target),reference:{date:last.date,close:last.close},metrics:{sma20:round(sma20),prior20High:round(breakout),atr14:round(atr14),averageVolume:round(averageVolume)},holdingContext:holding?'USER_ENTERED':'NONE',execution:'NEXT_SESSION_CONDITIONAL',validUntil:new Date(completedSessionDate===last.date?now+86400000:Math.min(now+86400000,Date.parse(last.date)+4*86400000)).toISOString(),warnings:['SIMULATION_NOT_RECOMMENDATION','LEVELS_NOT_GUARANTEED_FILLS','NO_PROFIT_PROBABILITY','SESSION_CALENDAR_NOT_INDEPENDENTLY_VERIFIED',...(holding?['COST_BASED_LEVELS_RECALCULATE_WITH_ATR_NOT_A_FIXED_STOP']:[])]};
 }

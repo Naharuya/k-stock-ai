@@ -68,10 +68,12 @@ final class KStockTradingStorageBridge: NSObject, WKScriptMessageHandlerWithRepl
             replyHandler(value,nil)
         case "set":
             guard let value=body["value"] as? String,Self.valid(value,key:key) else{replyHandler(nil,"STORAGE_VALUE_REJECTED");return}
+            if key=="kstock-user-holdings-v1"{KStockHoldingAlert.remove()}
             let data=Data(value.utf8);var code=SecItemUpdate(q as CFDictionary,[kSecValueData as String:data] as CFDictionary)
             if code==errSecItemNotFound {q[kSecValueData as String]=data;q[kSecAttrAccessible as String]=kSecAttrAccessibleWhenUnlockedThisDeviceOnly;code=SecItemAdd(q as CFDictionary,nil)}
             replyHandler(code==errSecSuccess ? true:nil,code==errSecSuccess ? nil:"STORAGE_WRITE_FAILED")
         case "remove":
+            if key=="kstock-user-holdings-v1"{KStockHoldingAlert.remove()}
             let code=SecItemDelete(q as CFDictionary);let ok=code==errSecSuccess||code==errSecItemNotFound;replyHandler(ok ? true:nil,ok ? nil:"STORAGE_DELETE_FAILED")
         default:replyHandler(nil,"STORAGE_OPERATION_REJECTED")
         }

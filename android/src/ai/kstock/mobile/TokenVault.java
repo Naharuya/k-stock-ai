@@ -26,6 +26,10 @@ public final class TokenVault implements ApiClient.Tokens {
  }
  public synchronized void save(String origin,String token) throws Exception {
   if(!ApiClient.validToken(token))throw new Exception("INVALID_TOKEN");
+  saveValue(origin,token);
+ }
+ public synchronized void saveValue(String origin,String token) throws Exception {
+  if(token==null||token.length()>8192)throw new Exception("VALUE_INVALID");
   Cipher cipher=Cipher.getInstance("AES/GCM/NoPadding");cipher.init(Cipher.ENCRYPT_MODE,key());
   cipher.updateAAD(origin.getBytes(StandardCharsets.UTF_8));
   String value=Base64.encodeToString(cipher.getIV(),Base64.NO_WRAP)+":"+Base64.encodeToString(cipher.doFinal(token.getBytes(StandardCharsets.UTF_8)),Base64.NO_WRAP);
