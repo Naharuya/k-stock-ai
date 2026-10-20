@@ -130,3 +130,7 @@ Backtest input checks include policy availability before events, independent chr
 Web first-request failure renders an error across summary width and does not call nonexistent values cached data. Later failed refreshes preserve previous cards/counts and mark them stale. Keyboard-accessible backtest disclosure preserves its expansion state on refresh.
 
 Skipped test totals produce TESTED_PARTIAL with SKIPPED_TESTS_NOT_RUN and are listed as NOT RUN in the executed QA artifact; the CLI exits nonzero until all required suites are TESTED_PASS.
+
+## Mac mini 작업 보고 상태
+
+GET `/api/v2/research/progress`는 기존 Bearer 인증과 no-store를 사용한다. 작업 보고와 공식 수집을 구분하며 `EVIDENCE_RECORDED`가 공식 자료 확보를 뜻하지 않는다. 보고가 없거나24시간 경과/미래시각이면 UNVERIFIED. 외부수집 NOT_RUN이면 신규 공식자료수0을 표시하며 미확인 수집은 NOT_VERIFIED/null을 사용한다. 로컬 작업 파일의 보고를 새로 연결하지 않으면 시간이 지나 UNVERIFIED가 된다.

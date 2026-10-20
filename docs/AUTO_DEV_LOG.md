@@ -1607,3 +1607,13 @@ src/v2/current_capital.js, current_research.js, current_collection_io.js, curren
 
 ---
 
+# 1~4단계 완료·커밋 기반 운영본 일치 — 2026-10-20 KST
+
+- 인증: Android 기존 암호화 vault와 iPhone 기기전용 Keychain 설정, 실제 운영 인증조회 및 재실행200 확인. 만료/거절 안내·갱신/삭제 UI, 이전401이 새인증을 지우지 않는 방어 회귀 PASS. 기기별 임시 가져오기 파일 삭제 확인, 비밀값 source/Git/APK/log 미포함. 저장인증 삭제 UI의 실제 삭제·재설정 전체 사용자 조작은 NOT RUN이며 기존 Android계약/Keychain 저장재실행 검증과 구분한다.
+- 연구: 저장공식자료33개를 운영에 신규 연결, 기존파일/사용자자료 덮어쓰기 없음. 맥미니 보고 EVIDENCE_RECORDED와 외부수집 NOT_RUN/신규0 구분. `/api/v2/research/progress` 인증필수/no-store/24시간이후 UNVERIFIED. 검증운영 메뉴에 작업보고 상태 연결. 공식가격·기업행동 미확보는 PENDING/HOLD, 연구 사건수나 회귀통과로 투자성과를 주장하지 않는다.
+- 두 실제 기기: 운영 전환 후 Galaxy A33/iPhone15 각16개 PASS 재확인. 운영인증·저장연구·종목화면 이동·가상기록4종·백업·복원·미확보가격null·실제API PENDING·미검증CSV차단·테스트기록제거. 종목별 실제가격/배당권리의 완전검증이 아니다. Android 디버깅포워드 제거·일반모드 재실행, iPhone도 QA 없는 인증연결 실행으로 복귀. android/ios-physical-postdeploy-workflow-20261020.json.
+- Git: 미커밋제품/테스트/문서357파일 검토·secret패턴0 확인 후 5811ad676593c1701c8fcc1e4aa26381aff9d99b 커밋 및 작업브랜치 push 성공. 생성화면349개는 로컬보존·해시목록만 영수증 저장, 사용자데이터/data/env/키/네이티브빌드/Git제외. docs/AUTO_DEV_LOG.md EOF 공백은 후속기록에서 정리. Git archive만 추출한 깨끗한 디렉터리에서 새 npm ci --ignore-scripts+회귀937/Android4 PASS. clean-commit-build-20261020.json. native 서명키/기기프로파일은 기존 외부자산을 재사용하며 정식 스토어 배포가 아니다. GitHub CI는 master전용이라 현재브랜치 실행0/NOT RUN.
+- 배포: 커밋과 서버/웹167파일 해시가 모두 일치하는 review-c8624b74d51f4584 생성(--require-committed), archiveSHA208b5bb0911f6b6ca8cd0f63aba3bc904ead1d3b213efe0203fb17456ad1fd8f. 원격격리설치/런타임24 PASS 뒤 기존검토경로에서 실행경로만 전환·KSTOCK재시작. 기존unit백업·환경해시보존·current/data재사용·실거래/수집/workerOFF. 실패복원구비/롤백미실행. 전환후11개 및 공개HTTPS PASS, 인증된저장연구/HOLD/progress공식수집미실행 확인. committed-server-stage/runtime/activation-20261020.json 및 access-research-public-https-20261020.json.
+- 전체회귀937/Android4/브라우저29/Python보안3/iOS영수증4 PASS. 정식스토어제출/최종운영개인정보정책/공식원천신규수집/검증가격기반실성과는 미완료로 유지한다. 추가동작을 사용자에게 완료로 오인시키지 않는다. 제품 코드 기준커밋은5811ad6이며 이 문서의 후속커밋은 검증기록만 추가한다.
+
+---
