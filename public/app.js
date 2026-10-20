@@ -86,7 +86,7 @@ async function loadPortfolio() {
   showMessage("SEC 원문 공시를 확인하고 있습니다.");
   try {
     const response = await fetch("/api/disclosures/berkshire/portfolio", {
-      headers: { Authorization: `Bearer ${sessionToken}`, Accept: "application/json", ...(options.body!==undefined?{"Content-Type":"application/json"}:{}) },
+      headers: { Authorization: `Bearer ${sessionToken}`, Accept: "application/json" },
       cache: "no-store",
       redirect: "error",
     });
@@ -165,7 +165,7 @@ async function candidateRequest(url, requireSuccess = true, options = {}) {
     signal: options.signal,
     method: options.method || "GET",
     ...(options.body!==undefined?{body:JSON.stringify(options.body)}:{}),
-    headers: { ...(sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {}), Accept: "application/json" },
+    headers: { ...(sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {}), Accept: "application/json", ...(options.body!==undefined?{"Content-Type":"application/json"}:{}) },
     cache: "no-store", redirect: "error",
   });
   let removeAbort=()=>{};

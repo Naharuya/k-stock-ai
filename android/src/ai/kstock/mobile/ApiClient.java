@@ -34,7 +34,9 @@ public final class ApiClient {
    String route=uri.getPath();
    if(route==null || route.contains("..") || route.contains("\\") || route.contains("%"))return failure(State.BLOCKED,400);
    boolean api=route.equals("/api")||route.startsWith("/api/");
-   if(route.matches("(?i).*/(?:orders?|trades?|trading|broker|kis)(?:/.*)?"))return failure(State.BLOCKED,403);
+   boolean tradingInfo = (method.equals("GET") && Arrays.asList("/api/v2/trading/instruments","/api/v2/trading/detail","/api/v2/trading/opportunities").contains(route)) ||
+     (method.equals("POST") && Arrays.asList("/api/v2/trading/holding-review","/api/v2/trading/replay").contains(route));
+   if(!tradingInfo && route.matches("(?i).*/(?:orders?|trades?|trading|broker|kis)(?:/.*)?"))return failure(State.BLOCKED,403);
    if(!Arrays.asList("GET","POST","PUT","PATCH","DELETE","HEAD").contains(method))return failure(State.BLOCKED,405);
    if(!api && !method.equals("GET") && !method.equals("HEAD"))return failure(State.BLOCKED,405);
    Map<String,String> headers=new HashMap<>();headers.put("Accept","application/json, text/html;q=0.9, */*;q=0.8");

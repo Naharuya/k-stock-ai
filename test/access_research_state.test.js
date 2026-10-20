@@ -24,3 +24,16 @@ test('request cancellation works even when the Android bridge ignores AbortSigna
  const pending=vm.runInContext('candidateRequest("/api/v2/research/progress",true,{signal:controller.signal})',context);
  controller.abort();await assert.rejects(pending,error=>error.name==='AbortError');settle({status:401});await new Promise(resolve=>setImmediate(resolve));assert.equal(vm.runInContext('sessionToken',context),'current');
 });
+
+test('JSON calculation requests carry content type and the serialized body',async()=>{
+ const source=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');const start=source.indexOf('async function candidateRequest('),end=source.indexOf('\n}',start)+2;let captured;
+ const context=vm.createContext({tokenInput:{value:'',focus(){}},fetch:async(url,options)=>{captured={url,options};return {status:200,ok:true,json:async()=>({success:true})};}});
+ vm.runInContext('let sessionToken="fixture-token";'+source.slice(start,end),context);
+ await vm.runInContext('candidateRequest("/api/v2/trading/holding-review",true,{method:"POST",body:{holding:{averageCost:100,quantity:1}}})',context);
+ assert.equal(captured.options.headers['Content-Type'],'application/json');assert.equal(captured.options.method,'POST');assert.equal(JSON.parse(captured.options.body).holding.quantity,1);assert.equal(captured.options.headers.Authorization,'Bearer fixture-token');
+});
+test('legacy portfolio fetch has no dependency on calculation request options',async()=>{
+ const source=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');const start=source.indexOf('async function loadPortfolio('),end=source.indexOf('\n}',start)+2;let fetched=false,rendered=false,last;
+ const context=vm.createContext({tokenInput:{value:'',focus(){}},loadButton:{disabled:false},showMessage:(text,kind)=>last=kind,byId:()=>({}),numberFormat:{format:n=>String(n)},dateFormat:{format:()=>''},renderHoldings:()=>rendered=true,fetch:async()=>{fetched=true;return {status:200,ok:true,json:async()=>({data:{holdings:[],checkedAt:'2026-10-20T00:00:00Z'}})};}});
+ vm.runInContext('let sessionToken="fixture-token",holdings=[];'+source.slice(start,end),context);await vm.runInContext('loadPortfolio()',context);assert.equal(fetched,true);assert.equal(rendered,true);assert.equal(last,'success');assert.equal(context.loadButton.disabled,false);
+});

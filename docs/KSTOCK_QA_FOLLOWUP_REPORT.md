@@ -1,3 +1,11 @@
+# 물리기기 통합 결함 발견·안전 복원 및 수정 — 2026-10-20 KST
+
+- review-83f6a83b92be435c는 격리35/전환후19검사 통과했지만 물리검사에서 Android 신규경로403 및 iPhone 계산POST400 발견. 완료 처리하지 않고 실제 실패영수증(trading-android-physical-initial-failure-20261020.json 및 iOS동명)을 보존했다. 이전 review-ccc0cc13d582097f로 명시적 안전복원, 서비스active/환경보존 확인. trading-physical-failure-safe-restore-20261020.json.
+- 원인: candidateRequest의 JSON Content-Type 누락 및 기존 공시함수에 잘못 들어간 options 참조, Android ApiClient의 trading 이름 전체차단. JSON헤더를 계산요청에만 연결하고 기존조회 참조 제거. Android는 정확한GET3개/POST2개만 허용하며 주문·하위경로·틀린메서드·유사경로 차단 유지.
+- 단위 회귀2개 추가, Java 실제 Transport 계약에 정확한정보경로·거래차단 검증 추가. 브라우저 fixture도 실제 요청 Content-Type을 확인하도록 수정하고 실제Express JSON 양성/음성 계약 검사 추가. 수정 후 재빌드·재전환·양기기 결과는 후속기록.
+
+---
+
 # iPhone 선택 저장의 실제 데이터 흐름 보강 — 2026-10-20 KST
 
 - 출시 전 기기 검토에서 iPhone HTTPS 앱의 nonPersistent WebView에는 localStorage 선택 저장이 앱 종료 후 유지되지 않는 점 확인. WebView 임시 모드는 유지하고 인증과 별도 서비스의 기기전용 Keychain 저장 브리지로 관심/선택 보유만 연결했다.
