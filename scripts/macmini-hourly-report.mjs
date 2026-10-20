@@ -29,8 +29,8 @@ async function publish(report,suffix){
  const name=report.checkedAt.replace(/[^0-9]/g,'')+'-'+suffix;
  const text='# KSTOCK Mac mini 시간별 업무 보고\n\n```json\n'+JSON.stringify(report,null,2)+'\n```\n';
  fs.writeFileSync(path.join(directory,name+'.md'),text,{mode:0o600,flag:'wx'});
- let delivery='DELIVERED';try{const result=await call('/bridge',{file:'JINI_TO_ARI.md',text});if(result.ok!==true)delivery='FAILED';}catch{delivery='FAILED';}
- fs.writeFileSync(path.join(directory,name+'.json'),JSON.stringify({...report,delivery},null,2)+'\n',{mode:0o600,flag:'wx'});
+ let delivery='FAILED',deliveryAttempts=0;for(let attempt=0;attempt<3;attempt++){deliveryAttempts++;try{const result=await call('/bridge',{file:'JINI_TO_ARI.md',text});if(result.ok===true){delivery='DELIVERED';break;}}catch{}if(attempt<2)await new Promise(resolve=>setTimeout(resolve,1000*(attempt+1)));}
+ fs.writeFileSync(path.join(directory,name+'.json'),JSON.stringify({...report,delivery,deliveryAttempts},null,2)+'\n',{mode:0o600,flag:'wx'});
  console.log(JSON.stringify({status:report.status,delivery,report:name+'.md'}));
 }
 const tradingMode=fs.existsSync(path.join(root,'docs/KSTOCK_TRADING_WORKER_ORDER.md'));
@@ -41,9 +41,10 @@ function runTradingCycle(){
  const task=spawnSync(process.execPath,[path.join(root,'scripts/run-trading-data-cycle.mjs'),'--approved-read-only'],{cwd:root,env,encoding:'utf8',timeout:150000,maxBuffer:1000000});
  let value;for(const line of String(task.stdout||'').split('\n'))try{value=JSON.parse(line);}catch{}
  if(!value)return {status:'BLOCKED',reason:'TRADING_CYCLE_RESULT_UNAVAILABLE',exitCode:task.status};
+ const events=spawnSync(process.execPath,[path.join(root,'scripts/refresh-trading-events.mjs')],{cwd:root,env,encoding:'utf8',timeout:50000,maxBuffer:1000000});
  const sync=spawnSync('/usr/bin/python3',[path.join(root,'scripts/sync-trading-data.py'),'--publish'],{cwd:root,env,encoding:'utf8',timeout:150000,maxBuffer:1000000});
  let synced;try{synced=JSON.parse(sync.stdout);}catch{}
- return {status:tradingCycleStatus({cycleStatus:value.status,cycleExitCode:task.status,syncExitCode:sync.status,published:synced?.published}),universeSecurities:value.universeSecurities??null,uniqueAttempted:value.uniqueAttempted??null,observed:value.observed??null,refreshAttempts:value.refreshAttempts??null,externalHttpRequests:value.externalHttpRequests??null,reason:value.reason||null,exitCode:task.status,publicMarketSync:sync.status===0&&synced?.published===true?'PUBLISHED':'FAILED',syncedFiles:synced?.files??null};
+ return {status:tradingCycleStatus({cycleStatus:value.status,cycleExitCode:task.status,syncExitCode:sync.status,published:synced?.published}),universeSecurities:value.universeSecurities??null,uniqueAttempted:value.uniqueAttempted??null,observed:value.observed??null,refreshAttempts:value.refreshAttempts??null,externalHttpRequests:value.externalHttpRequests??null,reason:value.reason||null,exitCode:task.status,eventRefresh:events.status===0?'EXECUTED':'UNAVAILABLE',publicMarketSync:sync.status===0&&synced?.published===true?'PUBLISHED':'FAILED',syncedFiles:synced?.files??null};
 }
 try{
  let report;

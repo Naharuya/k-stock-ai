@@ -2,8 +2,8 @@
 import pathlib,subprocess,json,hashlib,tarfile,datetime,re,argparse,io
 p=argparse.ArgumentParser();p.add_argument('--publish',action='store_true');a=p.parse_args()
 root=pathlib.Path(__file__).resolve().parents[1];source=root/'data/v2/trading-workspace';out=root/'data/v2/verification/trading-sync';out.mkdir(parents=True,exist_ok=True)
-files=[source/'instruments.json']+sorted((p for p in source.glob('*.json') if re.fullmatch(r'(KR-KRX-[0-9][A-Z0-9]{5}|US-(NAS|NYS|AMS)-[A-Z][A-Z0-9.]{0,9})\.json',p.name)),key=lambda p:p.stat().st_mtime,reverse=True)[:500]
-assert len(files)<=501 and all(p.is_file() and not p.is_symlink() and p.stat().st_size<=9000000 for p in files)
+files=[source/'instruments.json']+([source/'scheduled-events.json'] if (source/'scheduled-events.json').is_file() else [])+sorted((p for p in source.glob('*.json') if re.fullmatch(r'(KR-KRX-[0-9][A-Z0-9]{5}|US-(NAS|NYS|AMS)-[A-Z][A-Z0-9.]{0,9})\.json',p.name)),key=lambda p:p.stat().st_mtime,reverse=True)[:500]
+assert len(files)<=502 and all(p.is_file() and not p.is_symlink() and p.stat().st_size<=9000000 for p in files)
 manifest={'kind':'PUBLIC_KIS_MARKET_SNAPSHOT','checkedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'files':[{'name':p.name,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for p in files]}
 stamp=datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%S%fZ');archive=out/(stamp+'.tar.gz')
 with tarfile.open(archive,'w:gz') as tar:

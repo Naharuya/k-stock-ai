@@ -29,4 +29,11 @@ class SnapshotTests(unittest.TestCase):
     if mode=='future':p['receivedAt']=(datetime.datetime.now(datetime.timezone.utc)+datetime.timedelta(days=1)).isoformat()
     if mode=='source':p['sourceUrl']='https://evil.example/?token=fixture'
     target=pathlib.Path(d)/'data';r=self.apply(self.archive(d,p,name,mode=='hash'),target);self.assertNotEqual(r.returncode,0);self.assertFalse((target/'KR-KRX-005930.json').exists());self.assertFalse((pathlib.Path(d)/'private.json').exists())
+ def test_event_schedule_is_public_scoped_and_keeps_newer_snapshot(self):
+  p={'schemaVersion':1,'checkedAt':'2026-10-20T09:00:00Z','events':[{'market':'KR','symbol':'005930','exchange':'KRX','name':'삼성전자','sourceUrl':'https://www.samsung.com/global/ir/ir-events-presentations/events/','timeZone':'Asia/Seoul','kind':'EARNINGS_CALL','date':'2026-10-29','time':'10:00','timePrecision':'MINUTE','checkedAt':'2026-10-20T09:00:00Z','status':'ISSUER_PUBLISHED_SUBJECT_TO_CHANGE','sourceHash':'a'*64}]}
+  with tempfile.TemporaryDirectory(prefix='kstock-trading-apply-',dir='/tmp') as d:
+   target=pathlib.Path(d)/'data';self.assertEqual(self.apply(self.archive(d,p,'scheduled-events.json'),target).returncode,0)
+   r=self.apply(self.archive(d,p,'scheduled-events.json'),target);self.assertEqual(r.returncode,0,r.stderr)
+   for key,value in [('sourceUrl','https://evil.example'),('holding',{'quantity':1}),('symbol','AAPL')]:
+    bad=json.loads(json.dumps(p));bad['events'][0][key]=value;self.assertNotEqual(self.apply(self.archive(d,bad,'scheduled-events.json'),target).returncode,0)
 if __name__=='__main__':unittest.main()

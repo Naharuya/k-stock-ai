@@ -57,7 +57,7 @@ try:
                 check('design_asset:'+route, code == 200 and mime in headers.get('Content-Type','') and marker in text)
             check('responsive_design_linked', '/workspace-design.css' in shell and '/kstock-mark.svg' in shell)
         if (stage/'public/trading-workspace.js').is_file():
-            for route,marker in [('/trading-workspace.js','BUY_CONDITION_MET'),('/trading-workspace.css','.trading-card')]:
+            for route,marker in [('/trading-workspace.js','BUY_CONDITION_MET'),('/trading-tools.js','createAlertTracker'),('/trading-workspace.css','.trading-card')]:
                 code,_,text=request(route);check('trading_asset:'+route,code==200 and marker in text)
             check('trading_anonymous_401',request('/api/v2/trading/instruments')[0]==401)
             code,_,text=request('/api/v2/trading/instruments?market=KR',token);check('trading_catalog_authenticated',code==200 and json.loads(text).get('success') is True)

@@ -2,7 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';import {mkd
 import {parseWorkspaceHistory,workspaceInstrument,createTradingWorkspace,registerTradingWorkspace} from '../src/v2/trading_workspace.js';
 import {evaluateSwing} from '../src/v2/swing_strategy.js';
 const asOf='2026-10-20T07:00:00Z';
-const bars=()=>Array.from({length:50},(_,i)=>({date:new Date(Date.parse('2026-08-31')+i*86400000).toISOString().slice(0,10),open:100+i,high:102+i,low:99+i,close:101+i,volume:1000}));
+const bars=()=>{const dates=[];for(let n=0;dates.length<50;n++){const d=new Date(Date.parse('2026-10-19')-n*86400000),date=d.toISOString().slice(0,10);if(![0,6].includes(d.getUTCDay())&&!['2026-10-05','2026-10-09'].includes(date))dates.unshift(date);}return dates.map((date,i)=>({date,open:100+i,high:102+i,low:99+i,close:101+i,volume:1000}));};
 function response(rows=bars()){return {rt_cd:'0',output2:rows.map(r=>({stck_bsop_date:r.date.replaceAll('-',''),stck_oprc:String(r.open),stck_hgpr:String(r.high),stck_lwpr:String(r.low),stck_clpr:String(r.close),acml_vol:String(r.volume)}))};}
 const kr=workspaceInstrument({market:'KR',symbol:'005930'});
 test('instrument scope accepts direct codes but rejects URLs and exchange ambiguity',()=>{assert.equal(workspaceInstrument({market:'US',symbol:'AAPL'}).currency,'USD');assert.equal(workspaceInstrument({market:'US',symbol:'IBM',exchange:'NYS'}).exchange,'NYS');for(const input of [{market:'KR',symbol:'../../x'},{market:'US',symbol:'IBM'},{market:'XX',symbol:'AAPL'},{market:'US',symbol:'AAPL',exchange:'FAKE'}])assert.throws(()=>workspaceInstrument(input));});

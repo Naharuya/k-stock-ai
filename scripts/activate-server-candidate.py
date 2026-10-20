@@ -53,7 +53,7 @@ try:
   code,_,body=request('/workspace-design.css');assert code==200 and '--hero-glow' in body;checks.append('responsive_design_css')
   code,_,body=request('/kstock-mark.svg');assert code==200 and '<svg' in body;checks.append('brand_svg')
  if (stage/'public/trading-workspace.js').is_file():
-  for route,marker in [('/trading-workspace.js','BUY_CONDITION_MET'),('/trading-workspace.css','.trading-card')]:
+  for route,marker in [('/trading-workspace.js','BUY_CONDITION_MET'),('/trading-tools.js','createAlertTracker'),('/trading-workspace.css','.trading-card')]:
    code,_,body=request(route);assert code==200 and marker in body;checks.append('trading_asset:'+route)
   assert request('/api/v2/trading/instruments')[0]==401;checks.append('trading_anonymous_401')
   code,_,body=request('/api/v2/trading/instruments?market=KR',auth=True);catalog=json.loads(body);assert code==200 and catalog['universeSecurities']>0;checks.append('trading_catalog_available')

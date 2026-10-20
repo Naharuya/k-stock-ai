@@ -1,5 +1,7 @@
+import {reviewTradingData} from './market_calendar.js';
+import {eventScheduleFor} from './event_schedule.js';
 import {createMarketGatewayRequest} from './market_gateway.js';
-import {replaySwing} from './swing_replay.js';
+import {replaySwing,evaluateSwingPeriods} from './swing_replay.js';
 import {readFile,readdir,stat,mkdir,writeFile,rename} from 'node:fs/promises';
 import path from 'node:path';
 import {createHash,randomUUID} from 'node:crypto';
@@ -43,13 +45,9 @@ export function validWorkspaceSnapshot(value,id,at){
  return value.priceAsOf===value.bars.at(-1)?.date&&value.bars.every((r,i)=>typeof r?.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(r.date)&&Number.isFinite(Date.parse(r.date))&&new Date(r.date).toISOString().slice(0,10)===r.date&&Date.parse(r.date)<=Date.parse(value.receivedAt)&&['open','high','low','close'].every(k=>Number.isFinite(r[k])&&r[k]>0)&&Number.isSafeInteger(r.volume)&&r.volume>=0&&r.low<=Math.min(r.open,r.close)&&r.high>=Math.max(r.open,r.close)&&r.low<=r.high&&(!i||value.bars[i-1].date<r.date));
 }
 export function workspaceScenario(snapshot,instrument,asOf,holding=null){
- const scenario=evaluateSwing({bars:snapshot.bars,asOf,holding});
- const zone=instrument.market==='KR'?'Asia/Seoul':'America/New_York';
- const local=new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(asOf));
- const clock=new Intl.DateTimeFormat('en-GB',{timeZone:zone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(asOf));
- const end=new Date(Date.parse(local+'T00:00:00Z')-(clock>=(instrument.market==='KR'?'16:00':'16:30')?0:86400000));
- while([0,6].includes(end.getUTCDay()))end.setUTCDate(end.getUTCDate()-1);
- if(snapshot.priceAsOf<end.toISOString().slice(0,10))return {...scenario,action:'DATA_UNAVAILABLE',reason:'LATEST_COMPLETED_SESSION_UNCONFIRMED',entry:null,stop:null,target:null,metrics:null,validUntil:null};
+ const review=reviewTradingData(snapshot,instrument,asOf);
+ const scenario=evaluateSwing({bars:snapshot.bars,asOf,holding,completedSessionDate:review.calendar.status==='PUBLISHED_SCHEDULE'&&!review.issues.length?review.calendar.date:null});
+ if(review.issues.length)return {...scenario,action:'DATA_UNAVAILABLE',reason:review.issues[0],entry:null,stop:null,target:null,metrics:null,validUntil:null};
  return scenario;
 }
 export function createTradingWorkspace({env=process.env,request=env.KSTOCK_MARKET_GATEWAY_ENABLED==='true'?createMarketGatewayRequest():createKisRequest({appKey:env.KIS_APP_KEY,appSecret:env.KIS_APP_SECRET,environment:env.KIS_ENV||'paper'}),directory='data/v2/trading-workspace',now=()=>Date.now(),loadEvents=async()=>[]}={}){
@@ -71,7 +69,9 @@ export function createTradingWorkspace({env=process.env,request=env.KSTOCK_MARKE
   let events=[];try{const all=await loadEvents();events=(Array.isArray(all)?all:[]).filter(e=>e.companyId===instrument.symbol&&Number.isFinite(Date.parse(e.publicAvailableAt))&&Date.parse(e.publicAvailableAt)<=at).slice(-20).map(e=>{let sourceUrl=null;try{const u=new URL(e.sourceUrl);if(u.protocol==='https:'&&!u.username&&!u.password&&['www.sec.gov','dart.fss.or.kr','kind.krx.co.kr'].includes(u.hostname)&&[...u.searchParams.keys()].every(k=>k==='rcpNo')&&(!u.search||/^\d{14}$/.test(u.searchParams.get('rcpNo')||'')))sourceUrl=u.href;}catch{}return {eventType:String(e.eventType||'공시').slice(0,80),actionType:String(e.actionType||'').slice(0,80),filingDate:e.filingDate||null,publicAvailableAt:e.publicAvailableAt,verificationStatus:e.verificationStatus||'UNVERIFIED',sourceUrl};});}catch{}
 
   let saved=cache.get(id);if(!saved){try{saved=JSON.parse(await readFile(file,'utf8'));}catch{}}
-  const finish=(value,status,reason=null)=>({instrument,asOf,dataStatus:status,reason,history:value||null,quote:value?.bars?.at(-1)||null,strategy:['OBSERVED','STORED_OBSERVATION'].includes(status)?workspaceScenario(value,instrument,asOf,holding):{policy:SWING_POLICY,action:'DATA_UNAVAILABLE',reason:reason||status,entry:null,stop:null,target:null},recommendationStatus:'HOLD',orderExecution:false,events,eventsStatus:events.length?'SAVED_DISCLOSURES':'NO_LINKED_EVIDENCE',earningsCalendarStatus:'NOT_CONNECTED'});
+  let eventSnapshot;try{const raw=await readFile(path.join(directory,'scheduled-events.json'),'utf8');if(raw.length<100000)eventSnapshot=JSON.parse(raw);}catch{}
+  const schedule=eventScheduleFor(eventSnapshot,instrument,asOf);
+  const finish=(value,status,reason=null)=>({dataReview:value?reviewTradingData(value,instrument,asOf):null,eventSchedule:schedule,instrument,asOf,dataStatus:status,reason,history:value||null,quote:value?.bars?.at(-1)||null,strategy:['OBSERVED','STORED_OBSERVATION'].includes(status)?workspaceScenario(value,instrument,asOf,holding):{policy:SWING_POLICY,action:'DATA_UNAVAILABLE',reason:reason||status,entry:null,stop:null,target:null},recommendationStatus:'HOLD',orderExecution:false,events,eventsStatus:events.length?'SAVED_DISCLOSURES':'NO_LINKED_EVIDENCE',earningsCalendarStatus:schedule.status});
   if(!validWorkspaceSnapshot(saved,id,at))saved=null;
   if(saved&&at-Date.parse(saved.receivedAt)<300000)return finish(saved,'OBSERVED');
   if(env.KSTOCK_DECISION_READ_ENABLED==='false')return finish(saved,'UNAVAILABLE','READ_DISABLED');
@@ -104,7 +104,7 @@ export function createTradingWorkspace({env=process.env,request=env.KSTOCK_MARKE
 }
 export function registerTradingWorkspace(app,service){
  app.get('/api/v2/trading/opportunities',async(req,res)=>{res.set('Cache-Control','no-store');const market=req.query.market||'KR';if(!['KR','US'].includes(market))return res.status(400).json({success:false,error:'MARKET_INVALID'});try{res.json({success:true,...await service.opportunities(market)});}catch{res.status(503).json({success:false,error:'OPPORTUNITIES_UNAVAILABLE'});}});
- app.post('/api/v2/trading/replay',async(req,res)=>{res.set('Cache-Control','no-store');let instrument;const costs=req.body?.costs;try{instrument=workspaceInstrument(req.body);if(!costs||![costs.feePct,costs.taxPct,costs.slippagePct].every(n=>Number.isFinite(n)&&n>=0&&n<=5))throw Error();}catch{return res.status(400).json({success:false,error:'REPLAY_INPUT_INVALID'});}try{const d=await service.detail(instrument);res.json({success:true,instrument,dataStatus:d.dataStatus,result:['OBSERVED','STORED_OBSERVATION'].includes(d.dataStatus)?replaySwing({bars:d.history.bars,...costs}):{status:'INSUFFICIENT_DATA',reason:d.reason,metrics:null,trades:[]}});}catch{res.status(503).json({success:false,error:'REPLAY_UNAVAILABLE'});}});
+ app.post('/api/v2/trading/replay',async(req,res)=>{res.set('Cache-Control','no-store');let instrument;const supplied=req.body?.costs,costs=supplied?{feePct:supplied.feePct,taxPct:supplied.taxPct,slippagePct:supplied.slippagePct}:null;try{instrument=workspaceInstrument(req.body);if(!costs||![costs.feePct,costs.taxPct,costs.slippagePct].every(n=>Number.isFinite(n)&&n>=0&&n<=5))throw Error();}catch{return res.status(400).json({success:false,error:'REPLAY_INPUT_INVALID'});}try{const d=await service.detail(instrument);res.json({success:true,instrument,dataStatus:d.dataStatus,result:d.dataReview?.issues?.some(x=>['PRICE_ON_SCHEDULED_CLOSURE','PRICE_DISCONTINUITY_REVIEW_REQUIRED','SESSION_GAP_REVIEW_REQUIRED','PRICE_BEFORE_SCHEDULED_CLOSE'].includes(x))?{status:'INSUFFICIENT_DATA',reason:'PRICE_OR_ACTION_REVIEW_REQUIRED',metrics:null,trades:[]}:['OBSERVED','STORED_OBSERVATION'].includes(d.dataStatus)?{...replaySwing({bars:d.history.bars,...costs}),evaluation:evaluateSwingPeriods({bars:d.history.bars,...costs})}:{status:'INSUFFICIENT_DATA',reason:d.reason,metrics:null,trades:[]}});}catch{res.status(503).json({success:false,error:'REPLAY_UNAVAILABLE'});}});
  app.get('/api/v2/trading/instruments',async(req,res)=>{res.set('Cache-Control','no-store');const market=req.query.market||'KR',q=String(req.query.q||'').trim().slice(0,50);if(!['KR','US'].includes(market))return res.status(400).json({success:false,error:'MARKET_INVALID'});try{res.json({success:true,...await service.instruments({market,q})});}catch{res.status(503).json({success:false,error:'INSTRUMENTS_UNAVAILABLE'});}});
  app.get('/api/v2/trading/detail',async(req,res)=>{res.set('Cache-Control','no-store');let instrument;try{instrument=workspaceInstrument(req.query);}catch{return res.status(400).json({success:false,error:'INSTRUMENT_INVALID'});}try{res.json({success:true,...await service.detail(instrument)});}catch{res.status(503).json({success:false,error:'WORKSPACE_UNAVAILABLE'});}});
  app.post('/api/v2/trading/holding-review',async(req,res)=>{res.set('Cache-Control','no-store');let instrument;const h=req.body?.holding;try{instrument=workspaceInstrument(req.body);if(!h||!Number.isFinite(h.averageCost)||h.averageCost<=0||h.averageCost>1e12||!Number.isFinite(h.quantity)||h.quantity<=0||h.quantity>1e9)throw Error();}catch{return res.status(400).json({success:false,error:'HOLDING_INVALID'});}try{res.json({success:true,...await service.detail(instrument,{holding:{averageCost:h.averageCost,quantity:h.quantity}})});}catch{res.status(503).json({success:false,error:'WORKSPACE_UNAVAILABLE'});}});

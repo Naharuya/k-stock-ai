@@ -8,6 +8,16 @@ def time(value):
  t=datetime.datetime.fromisoformat(value.replace('Z','+00:00'));assert t.tzinfo is not None and t<=now;return t
 
 def validate(name,d):
+ if name=='scheduled-events.json':
+  assert set(d)=={'schemaVersion','checkedAt','events'} and d['schemaVersion']==1 and len(d['events'])<=20;time(d['checkedAt'])
+  sources={('KR','005930','KRX'):('https://www.samsung.com/global/ir/ir-events-presentations/events/','Asia/Seoul','EARNINGS_CALL'),('US','MSFT','NAS'):('https://www.microsoft.com/en-us/investor/default','America/New_York','EARNINGS_RELEASE')}
+  for e in d['events']:
+   assert set(e)<=set('market symbol exchange name sourceUrl timeZone kind date time timePrecision checkedAt status sourceHash'.split())
+   assert (e['sourceUrl'],e['timeZone'],e['kind'])==sources[(e['market'],e['symbol'],e['exchange'])]
+   assert e['checkedAt']==d['checkedAt'] and re.fullmatch('[a-f0-9]{64}',e['sourceHash']) and e['status']=='ISSUER_PUBLISHED_SUBJECT_TO_CHANGE'
+   date=datetime.date.fromisoformat(e['date']);assert date<=now.date()+datetime.timedelta(days=120)
+   assert (e['time'] is None and e['timePrecision']=='DATE_ONLY') or (e['timePrecision']=='MINUTE' and re.fullmatch(r'([01]\d|2[0-3]):[0-5]\d',e['time']))
+  return
  if name=='instruments.json':
   assert set(d)<=set('schemaVersion checkedAt listingAsOf coverage items excluded sources marketCounts boardCounts companyCount'.split())
   assert d['schemaVersion']==1 and 0<len(d['items'])<=30000 and len(d['sources'])==6
@@ -35,7 +45,7 @@ def validate(name,d):
    assert prior is None or prior<date;prior=date
   assert d['priceAsOf']==d['bars'][-1]['date']
 with tarfile.open(a.archive,'r:gz') as archive:
- members=archive.getmembers();assert len(members)<=502 and sum(m.size for m in members)<=50000000
+ members=archive.getmembers();assert len(members)<=503 and sum(m.size for m in members)<=50000000
  assert all(m.isfile() and '/' not in m.name and '\\' not in m.name and m.size<=9000000 for m in members)
  assert len({m.name for m in members})==len(members)
  manifest=json.load(archive.extractfile('snapshot-manifest.json'));assert manifest['kind']=='PUBLIC_KIS_MARKET_SNAPSHOT'
@@ -49,7 +59,7 @@ try:
  for name,data in payload.items():
   target=root/name;assert not target.is_symlink()
   if target.exists():
-   previous=json.loads(target.read_text());incoming=json.loads(data);field='checkedAt' if name=='instruments.json' else 'receivedAt'
+   previous=json.loads(target.read_text());incoming=json.loads(data);field='checkedAt' if name in ['instruments.json','scheduled-events.json'] else 'receivedAt'
    if time(previous[field])>time(incoming[field]):skipped.append(name);continue
    (backup/name).write_bytes(target.read_bytes())
   temporary=root/(name+'.'+stamp+'.tmp');temporary.write_bytes(data);temporary.chmod(0o600);os.replace(temporary,target);applied.append(name)
@@ -61,5 +71,5 @@ except:
 # Bound only our generated public-market backups; preserve any unexpected files.
 backups=sorted(p for p in (root/'sync-backups').iterdir() if p.is_dir() and not p.is_symlink() and re.fullmatch(r'\d{8}T\d{12}Z',p.name))
 for old in backups[:-48]:
- if all(p.is_file() and not p.is_symlink() and (p.name=='instruments.json' or re.fullmatch(r'(KR-KRX-[0-9][A-Z0-9]{5}|US-(NAS|NYS|AMS)-[A-Z][A-Z0-9.]{0,9})\.json',p.name)) for p in old.iterdir()):shutil.rmtree(old)
+ if all(p.is_file() and not p.is_symlink() and (p.name in ['instruments.json','scheduled-events.json'] or re.fullmatch(r'(KR-KRX-[0-9][A-Z0-9]{5}|US-(NAS|NYS|AMS)-[A-Z][A-Z0-9.]{0,9})\.json',p.name)) for p in old.iterdir()):shutil.rmtree(old)
 print(json.dumps({'status':'APPLIED_PUBLIC_DATA','files':len(applied),'newerFilesPreserved':len(skipped),'userDataIncluded':False,'environmentChanged':False,'serviceChanged':False}))
