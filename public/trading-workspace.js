@@ -6,7 +6,7 @@
  if(nativeStore){$('trading-storage-description').textContent='보유정보를 이 기기 전용 Keychain에 저장';$('trading-watch-storage-note').textContent='관심종목을 이 기기 전용 Keychain에 보관합니다. 아래에서 모두 삭제할 수 있습니다.';}
  const key=i=>`${i.market}:${i.exchange}:${i.symbol}`;
  const labels={BUY_CONDITION_MET:'모의 매수 조건 충족',WAIT:'관망 · 진입 조건 미충족',EXIT_CONDITION_MET:'모의 청산 조건 충족',REDUCE_CONDITION_MET:'모의 축소 조건 충족',RISK_REVIEW:'보유 위험 재검토',HOLD_CONDITION_MET:'모의 유지 조건',DATA_UNAVAILABLE:'판단 자료 부족'};
- const reasons={BREAKOUT_NOT_MET:'직전20일 고가 돌파 미충족',TREND_NOT_MET:'20일 평균 위 추세 미충족',VOLUME_NOT_MET:'직전20일 평균 거래량 초과 미충족',NO_TRADING_VOLUME_OR_HALT_REVIEW_REQUIRED:'거래량이 0입니다. 거래정지 여부 확인이 필요합니다.',VOLATILITY_OR_VOLUME_INVALID:'변동성 또는 평균 거래량이 계산 기준에 맞지 않습니다.',PRICE_BEFORE_SCHEDULED_CLOSE:'아직 완료되지 않은 세션의 가격이 포함되어 판단을 보류합니다.',SESSION_GAP_REVIEW_REQUIRED:'예정 거래일 사이에 빠진 일봉이 있습니다. 거래정지·자료 누락을 확인해야 합니다.',PRICE_ON_SCHEDULED_CLOSURE:'공식 휴장 일정에 일봉이 있어 가격 자료를 재확인해야 합니다.',PRICE_DISCONTINUITY_REVIEW_REQUIRED:'전일 종가와 다음 시가 차이가 30% 이상입니다. 기업행동 또는 가격 급변을 확인하기 전 조건 계산을 보류합니다.',PROVIDER_NOT_CONFIGURED:'시세 공급자 설정이 없습니다.',PROVIDER_COOLDOWN:'공급자 호출 간격을 기다린 후 다시 조회하세요.',PROVIDER_UNAVAILABLE:'공급자가 자료를 제공하지 못했습니다. 인증·사용 권한을 확인해야 합니다.',MARKET_GATEWAY_UNAVAILABLE:'맥미니 시세 연결을 확인하지 못했습니다. 마지막 수신 시각을 확인하세요.',HTTP_403:'공급자 인증 또는 접근이 차단됐습니다.',READ_DISABLED:'시세 조회가 비활성화돼 있습니다.',LATEST_COMPLETED_SESSION_UNCONFIRMED:'최근 완료 거래일의 일봉 또는 휴장 달력을 확인하지 못해 전략 판단을 보류합니다.',PRICE_STALE:'마지막 일봉이 오래되어 전략 판단을 중지했습니다.',DAILY_HISTORY_REQUIRED:'전략 계산에 완료된 일봉 40개 이상이 필요합니다.',DAILY_HISTORY_INVALID:'일봉의 날짜·가격·거래량을 확인하지 못했습니다.'};
+ const reasons={HOLDING_RISK_LEVEL_INVALID:"평균가와 변동성으로 유효한 손절 기준을 계산하지 못했습니다. 상세 자료를 확인하세요.",IDENTITY_MISMATCH:"종목 정보가 일치하지 않아 판단을 표시하지 않습니다.",CONDITION_EXPIRED:"조건 유효기한이 지났습니다. 다시 확인하세요.",BREAKOUT_NOT_MET:'직전20일 고가 돌파 미충족',TREND_NOT_MET:'20일 평균 위 추세 미충족',VOLUME_NOT_MET:'직전20일 평균 거래량 초과 미충족',NO_TRADING_VOLUME_OR_HALT_REVIEW_REQUIRED:'거래량이 0입니다. 거래정지 여부 확인이 필요합니다.',VOLATILITY_OR_VOLUME_INVALID:'변동성 또는 평균 거래량이 계산 기준에 맞지 않습니다.',PRICE_BEFORE_SCHEDULED_CLOSE:'아직 완료되지 않은 세션의 가격이 포함되어 판단을 보류합니다.',SESSION_GAP_REVIEW_REQUIRED:'예정 거래일 사이에 빠진 일봉이 있습니다. 거래정지·자료 누락을 확인해야 합니다.',PRICE_ON_SCHEDULED_CLOSURE:'공식 휴장 일정에 일봉이 있어 가격 자료를 재확인해야 합니다.',PRICE_DISCONTINUITY_REVIEW_REQUIRED:'전일 종가와 다음 시가 차이가 30% 이상입니다. 기업행동 또는 가격 급변을 확인하기 전 조건 계산을 보류합니다.',PROVIDER_NOT_CONFIGURED:'시세 공급자 설정이 없습니다.',PROVIDER_COOLDOWN:'공급자 호출 간격을 기다린 후 다시 조회하세요.',PROVIDER_UNAVAILABLE:'공급자가 자료를 제공하지 못했습니다. 인증·사용 권한을 확인해야 합니다.',MARKET_GATEWAY_UNAVAILABLE:'맥미니 시세 연결을 확인하지 못했습니다. 마지막 수신 시각을 확인하세요.',HTTP_403:'공급자 인증 또는 접근이 차단됐습니다.',READ_DISABLED:'시세 조회가 비활성화돼 있습니다.',LATEST_COMPLETED_SESSION_UNCONFIRMED:'최근 완료 거래일의 일봉 또는 휴장 달력을 확인하지 못해 전략 판단을 보류합니다.',PRICE_STALE:'마지막 일봉이 오래되어 전략 판단을 중지했습니다.',DAILY_HISTORY_REQUIRED:'전략 계산에 완료된 일봉 40개 이상이 필요합니다.',DAILY_HISTORY_INVALID:'일봉의 날짜·가격·거래량을 확인하지 못했습니다.'};
  const node=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
  const button=(text,fn)=>{const b=node('button',text,'candidate-button');b.type='button';b.addEventListener('click',fn);return b;};
  const money=(v,c)=>Number.isFinite(v)?new Intl.NumberFormat('ko-KR',{style:'currency',currency:c,maximumFractionDigits:c==='KRW'?0:2}).format(v):'미확인';
@@ -26,7 +26,54 @@
  if(i.cachedChecks){const names={BREAKOUT:'20일 고가 돌파',TREND:'20일 평균 위 추세',VOLUME:'평균 거래량 초과'};for(const c of i.cachedChecks)n.append(node('p',`${c.passed?'충족':'미충족'} · ${names[c.id]||c.id}`,'trading-note'));}if(i.cachedAction==='DATA_UNAVAILABLE')n.append(node('p',reasons[i.cachedReason]||'판단 자료를 다시 확인해야 합니다.','trading-note'));
  const a=node('div',undefined,'trading-actions');a.append(button('가격·매매 조건 보기',()=>openDetail(i)),button('관심 추가',()=>addWatch(i)));n.append(a);return n;}
  function renderWatches(){const target=$('trading-watch-list');target.replaceChildren();if(!watches.length)target.append(node('p','관심종목이 없습니다. 검색에서 추가하세요.'));for(const i of watches){const card=smallCard(i);card.append(button('관심 해제',()=>{watches=watches.filter(x=>key(x)!==key(i));saveWatches();}));target.append(card);}}
- function renderHoldings(){const target=$('trading-holding-list');target.replaceChildren();if(!holdings.length)target.append(node('p','직접 입력한 보유종목이 없습니다.'));for(const h of holdings){const row=node('article',undefined,'trading-holding-row');row.append(node('p',`${h.name||h.symbol} · ${h.symbol} · ${h.quantity}주 · 평균 ${money(h.averageCost,h.currency)} · 직접 입력`),button('유지·청산 조건 확인',()=>reviewHolding(h)),button('수정',()=>{for(const [id,v]of [['market',h.market],['symbol',h.symbol],['exchange',h.exchange],['quantity',h.quantity],['cost',h.averageCost]])$('trading-holding-'+id).value=v;$('trading-holding-symbol').focus();}),button('삭제',()=>{holdings=holdings.filter(x=>key(x)!==key(h));$('trading-holding-review').replaceChildren();saveHoldings();}));target.append(row);}}
+ let holdingGeneration=0,holdingController=null,holdingBusy=false;
+ const holdingPanels=new Map(),holdingResults=new Map();
+ const holdingFingerprint=()=>JSON.stringify(holdings.map(h=>[key(h),h.averageCost,h.quantity]));
+ function cancelHoldingSummaries(){holdingGeneration++;holdingController?.abort();holdingController=null;holdingBusy=false;}
+ function drawHoldingSummary(h,panel,data){
+  const summary=window.KStockTradingTools.holdingExitSummary(h,data);
+  if(data?.instrument&&['market','exchange','symbol','currency'].every(k=>data.instrument[k]===h[k])&&typeof data.instrument.name==='string'){const heading=panel.parentElement?.querySelector('h3');if(heading)heading.textContent=`${data.instrument.name} · ${h.symbol}`;}
+  panel.replaceChildren(node('p',summary.title,'holding-exit-state'));
+  panel.dataset.action=summary.action;
+  if(summary.action==='DATA_UNAVAILABLE'){panel.append(node('p',reasons[summary.reason]||'자료를 확인하지 못했습니다. 아래 상세 확인으로 시세를 다시 조회하세요.','trading-note'));return;}
+  const why={EXIT_CONDITION_MET:'종가가 평균가·변동성 기준 손절선 이하입니다.',REDUCE_CONDITION_MET:'종가가 평균가·변동성 기준 목표선 이상입니다.',RISK_REVIEW:'종가가20일 평균 아래입니다. 손절·목표 조건과 함께 검토하세요.',HOLD_CONDITION_MET:'손절·목표에 도달하지 않았고 종가가20일 평균 이상입니다.'};
+  panel.append(node('p',why[summary.action]),node('p',`일봉 종가 ${money(summary.close,h.currency)} · 평균가 대비 ${summary.pnlPct>=0?'+':''}${summary.pnlPct.toFixed(2)}% (비용 미반영)`));
+  const levels=node('dl',undefined,'holding-exit-levels');
+  for(const [name,value]of [['손절 검토 기준',summary.stop],['목표·축소 기준',summary.target],['추세 확인 · 20일 평균',summary.sma]]){const cell=node('div');cell.append(node('dt',name),node('dd',money(value,h.currency)));levels.append(cell);}
+  panel.append(levels,node('p',`가격 기준일 ${summary.priceDate} · 자료 수신 ${instant(summary.receivedAt)} · 조건 유효 ${instant(summary.validUntil)} (한국 시간)`,'trading-note'),node('p','일봉 종가 기준 모의 조건입니다. 장중 매도 시각·체결을 보장하지 않습니다. 손절·목표는 평균가와 현재 ATR로 재계산되며 고정 주문이 아닙니다.','trading-note'));
+ }
+ async function refreshHoldingSummaries(){
+  if(holdingBusy||!holdings.length||location.hash!=='#my-stocks'||document.visibilityState!=='visible')return;
+  const generation=++holdingGeneration,fingerprint=holdingFingerprint(),rows=holdings.map(h=>({market:h.market,symbol:h.symbol,exchange:h.exchange}));
+  holdingController=new AbortController();const controller=holdingController;holdingBusy=true;holdingResults.clear();
+  for(const panel of holdingPanels.values()){panel.removeAttribute('data-action');panel.replaceChildren(node('p','종가 기준 매도 조건 확인 중…'));}
+  const timer=setTimeout(()=>controller.abort(),20000);
+  try{
+   const data=await candidateRequest('/api/v2/trading/holding-summaries',true,{method:'POST',body:{instruments:rows},signal:controller.signal});
+   if(generation!==holdingGeneration||fingerprint!==holdingFingerprint()||location.hash!=='#my-stocks')return;
+   if(!Array.isArray(data.items)||data.items.length!==rows.length)throw Error('RESPONSE_INVALID');
+   const mapped=new Map();for(const item of data.items){const id=key(item.instrument||{});if(mapped.has(id))throw Error('RESPONSE_INVALID');mapped.set(id,item);}
+   for(const h of holdings){const panel=holdingPanels.get(key(h)),item=mapped.get(key(h));if(panel){holdingResults.set(key(h),item);drawHoldingSummary(h,panel,item);}}
+  }catch(e){if(generation!==holdingGeneration)return;if(e.message==='AUTH')$('trading-holding-review').replaceChildren(node('p',errorText(e),'trading-error'));holdingResults.clear();for(const panel of holdingPanels.values()){panel.dataset.action='DATA_UNAVAILABLE';panel.replaceChildren(node('p','판단 보류','holding-exit-state'),node('p',errorText(e),'trading-note'));}}
+  finally{clearTimeout(timer);if(generation===holdingGeneration){holdingBusy=false;holdingController=null;}}
+ }
+ function renderHoldings(){
+  cancelHoldingSummaries();holdingResults.clear();holdingPanels.clear();
+  const target=$('trading-holding-list');target.replaceChildren();
+  if(!holdings.length)target.append(node('p','직접 입력한 보유종목이 없습니다.'));
+  for(const h of holdings){
+   const row=node('article',undefined,'trading-holding-row');row.append(node('h3',`${h.name||h.symbol} · ${h.symbol}`),node('p',`${h.market==='KR'?'국내':'미국'} · ${h.exchange} · ${h.quantity}주 · 평균 ${money(h.averageCost,h.currency)} · 직접 입력`));
+   const panel=node('div',undefined,'holding-exit-summary');panel.setAttribute('aria-live','polite');panel.append(node('p','보유종목 화면에서 종가 기준 매도 조건을 확인합니다.'));holdingPanels.set(key(h),panel);row.append(panel);
+   const actions=node('div',undefined,'trading-actions');actions.append(button('유지·청산 조건 확인',()=>reviewHolding(h)),button('수정',()=>{for(const [id,v]of [['market',h.market],['symbol',h.symbol],['exchange',h.exchange],['quantity',h.quantity],['cost',h.averageCost]])$('trading-holding-'+id).value=v;$('trading-holding-symbol').focus();}),button('삭제',()=>{holdings=holdings.filter(x=>key(x)!==key(h));$('trading-holding-review').replaceChildren();saveHoldings();}));row.append(actions);target.append(row);
+  }
+  refreshHoldingSummaries();
+ }
+ $('trading-holding-refresh').addEventListener('click',refreshHoldingSummaries);
+ setInterval(()=>{if(location.hash==='#my-stocks'&&document.visibilityState==='visible')refreshHoldingSummaries();},180000);
+ setInterval(()=>{for(const h of holdings){const data=holdingResults.get(key(h)),panel=holdingPanels.get(key(h));if(panel&&data&&Date.parse(data.strategy?.validUntil)<=Date.now())drawHoldingSummary(h,panel,data);}},15000);
+ document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible')cancelHoldingSummaries();else if(location.hash==='#my-stocks')refreshHoldingSummaries();});
+ window.addEventListener('pagehide',cancelHoldingSummaries);
+ window.addEventListener('hashchange',()=>{if(location.hash!=='#my-stocks')cancelHoldingSummaries();});
  function chart(bars,target){if(!bars?.length)return;const rows=bars.slice(-60),values=rows.map(r=>r.close),low=Math.min(...values),high=Math.max(...values),span=high-low||1;const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg');svg.setAttribute('viewBox','0 0 700 200');svg.setAttribute('role','img');svg.setAttribute('aria-label',`일봉 종가 추이 ${rows[0].date}부터 ${rows.at(-1).date}까지. 아래 표에서 수치를 확인할 수 있습니다.`);svg.classList.add('trading-chart');const line=document.createElementNS(ns,'polyline');line.setAttribute('points',values.map((v,i)=>`${10+i*680/Math.max(1,values.length-1)},${180-(v-low)/span*160}`).join(' '));line.setAttribute('fill','none');line.setAttribute('stroke','currentColor');line.setAttribute('stroke-width','3');svg.append(line);target.append(svg);
  const details=node('details');details.append(node('summary','최근 일봉 가격·거래량 표'));const wrap=node('div',undefined,'trading-table-wrap'),table=node('table'),caption=node('caption','최근10개 일봉 · 공급자 수정주가');table.append(caption);const head=node('thead'),header=node('tr');for(const v of ['일자','시가','고가','저가','종가','거래량']){const th=node('th',v);th.scope='col';header.append(th);}head.append(header);table.append(head);const body=node('tbody');for(const r of bars.slice(-10).reverse()){const tr=node('tr');for(const v of [r.date,r.open,r.high,r.low,r.close,r.volume])tr.append(node('td',typeof v==='number'?v.toLocaleString('ko-KR'):v));body.append(tr);}table.append(body);wrap.append(table);details.append(wrap);target.append(details);}
  function renderDetail(data,target,{holding=null}={}){target.replaceChildren();const i=data.instrument,s=data.strategy,card=node('article',undefined,'trading-card');card.append(node('h3',`${i.name} · ${i.symbol}`),node('p',`${i.exchange} · ${i.currency} · 일봉 종가 · 수일~수주`));const quote=data.quote;if(quote){card.append(node('p',money(quote.close,i.currency),'trading-price'),node('p',`가격 기준일 ${quote.date} · 마지막 수신 ${instant(data.history.receivedAt)} (한국 시간)`,'trading-note'));if(data.dataStatus==='STORED_OBSERVATION')card.append(node('p','동기화된 공급자 일봉 종가입니다. 실시간 시세가 아닙니다.','trading-note'));else if(data.dataStatus!=='OBSERVED')card.append(node('p','이전 저장 자료입니다. 현재 시세로 해석하지 마세요.','trading-error'));}else card.append(node('p','확인된 가격이 없습니다.','trading-error'));
@@ -59,6 +106,6 @@
  $('trading-holding-persist').addEventListener('change',()=>{persist=$('trading-holding-persist').checked;saveHoldings();});$('trading-holding-clear').addEventListener('click',()=>{holdings=[];persist=false;$('trading-holding-persist').checked=false;$('trading-holding-review').replaceChildren();saveHoldings();});
  window.addEventListener('kstock-open-instrument',event=>{const i=event.detail;if(valid(i))openDetail(i);});
  window.addEventListener('hashchange',()=>{if(location.hash==='#trading-today')loadCatalog();if(location.hash==='#watch-stocks')renderWatches();if(location.hash==='#my-stocks')renderHoldings();if(location.hash==='#trading-stock-detail'&&detailSelection)loadInstrument(detailSelection,$('trading-detail-content'));});
- window.addEventListener('kstock-data-ready',()=>{if(authenticationMissing&&location.hash==='#trading-today')loadCatalog();});
+ window.addEventListener('kstock-data-ready',()=>{if(authenticationMissing&&location.hash==='#trading-today')loadCatalog();if(location.hash==='#my-stocks')refreshHoldingSummaries();});
  window.addEventListener('pagehide',()=>{ticket++;active?.abort();});renderWatches();renderHoldings();if(!location.hash){location.hash='trading-today';}else if(location.hash==='#trading-today')loadCatalog();
 })();

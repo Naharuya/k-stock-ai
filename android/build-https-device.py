@@ -9,7 +9,7 @@ work=Path(tempfile.mkdtemp(prefix='https-device-',dir=root/'build'))
 for name in ['src','res','assets']:shutil.copytree(root/name,work/name)
 shutil.copy(root/'build.mjs',work/'build.mjs')
 shutil.copy(root.parent/'scripts/physical-live-workflow.js',work/'assets/live-workflow.js')
-s=(root/'AndroidManifest.xml').read_text().replace('package="ai.kstock.mobile"','package="ai.kstock.mobile.localvalidation"').replace('android:name=".MainActivity"','android:name="ai.kstock.mobile.MainActivity"').replace('android:name=".BriefNotificationJob"','android:name="ai.kstock.mobile.BriefNotificationJob"').replace('android:label="K-Stock AI"','android:label="K-Stock HTTPS"').replace('android:versionCode="265"','android:versionCode="271"').replace('android:versionName="2.6.5"','android:versionName="2.7.1"')
+s=(root/'AndroidManifest.xml').read_text().replace('package="ai.kstock.mobile"','package="ai.kstock.mobile.localvalidation"').replace('android:name=".MainActivity"','android:name="ai.kstock.mobile.MainActivity"').replace('android:name=".BriefNotificationJob"','android:name="ai.kstock.mobile.BriefNotificationJob"').replace('android:label="K-Stock AI"','android:label="K-Stock HTTPS"').replace('android:versionCode="265"','android:versionCode="272"').replace('android:versionName="2.6.5"','android:versionName="2.7.2"')
 (work/'AndroidManifest.xml').write_text(s)
 # Migrate only known validation origins, preserving custom origins and old preferences.
 p=work/'src/ai/kstock/mobile/ServerAddress.java';s=p.read_text().replace('if(saved==null || saved.trim().isEmpty())return DEFAULT;', 'if(saved==null || saved.trim().isEmpty())return DEFAULT;\n  if(saved.trim().replaceAll("/+$", "").equals("http://127.0.0.1:3103"))return DEFAULT;');p.write_text(s)

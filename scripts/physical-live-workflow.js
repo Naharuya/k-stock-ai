@@ -13,6 +13,12 @@
   check('krUsCurrencySeparated',kr.instrument.currency==='KRW'&&us.instrument.currency==='USD');check('ruleSimulationNotRecommendation',kr.strategy.policy.mode==='RULE_SIMULATION'&&kr.recommendationStatus==='HOLD'&&kr.orderExecution===false);
   const holding=await candidateRequest('/api/v2/trading/holding-review',true,{method:'POST',body:{market:'KR',symbol:'005930',holding:{averageCost:kr.quote.close,quantity:1}}});check('holdingReviewNoExecution',holding.strategy.holdingContext==='USER_ENTERED'&&holding.orderExecution===false);
   location.hash='trading-today';applyResearchScreen();for(let n=0;n<100&&!document.querySelector('#trading-home-detail .trading-price');n++)await new Promise(r=>setTimeout(r,100));check('newTradingHomeVisible',document.getElementById('trading-today').classList.contains('screen-active')&&!!document.querySelector('#trading-home-detail .trading-price'));
+  const publicSummary=await candidateRequest('/api/v2/trading/holding-summaries',true,{method:'POST',body:{instruments:[{market:'KR',symbol:'005930',exchange:'KRX'},{market:'US',symbol:'AAPL',exchange:'NAS'}]}});
+  check('publicHoldingSummaryApi',publicSummary.success===true&&publicSummary.items?.length===2&&publicSummary.orderExecution===false);
+  check('publicSummaryContainsNoUserHoldings',publicSummary.items.every(d=>!('quantity' in d)&&!('averageCost' in d)&&d.strategy.holdingContext!=='USER_ENTERED'));
+  const summaryKr=publicSummary.items.find(d=>d.instrument.market==='KR');
+  const localExit=window.KStockTradingTools.holdingExitSummary({...summaryKr.instrument,averageCost:kr.quote.close,quantity:1},summaryKr);
+  check('holdingExitCalculatedOnDevice',['EXIT_CONDITION_MET','REDUCE_CONDITION_MET','RISK_REVIEW','HOLD_CONDITION_MET'].includes(localExit.action));
   check('candidateDiagnosticsVisible',!!document.querySelector('#trading-opportunities .trading-diagnosis'));
   check('detailNotesAtLeast15px',Array.from(document.querySelectorAll('#trading-home-detail .trading-note')).length>0&&Array.from(document.querySelectorAll('#trading-home-detail .trading-note')).every(n=>parseFloat(getComputedStyle(n).fontSize)>=15));
   check('mobileHomeNoOverflow',document.documentElement.scrollWidth<=innerWidth);
