@@ -1,3 +1,5 @@
+> 최우선: docs/KSTOCK_MACMINI_CONTINUOUS_PROMPT.md. Gate1 이후에도 Gate2~4와 최종 검토까지 미완료 작업을 이어가며 매시간 보고한다. 아래 이전 제한은 최신 지시와 충돌하지 않는 부분만 유효하다.
+
 > 최우선 갱신: docs/KSTOCK_MACMINI_RECOVERY_ORDER.md의 Gate1만 먼저 수행한다. 아래 전체 점검 지시는 Gate1 통과 후에만 유효하다.
 
 > 현재 우선 지시(2026-10-20): 사용자 요청으로 국내주식 전체 점검으로 범위를 확대했다. docs/KSTOCK_MACMINI_KR_ALL_STOCKS_ORDER.md를 먼저 읽고 전수 대상 목록·점검 큐·보고를 진행한다. 아래 이전 작업 범위는 새 지시와 충돌하지 않는 부분만 적용한다.

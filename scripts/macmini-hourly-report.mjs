@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {programSummary,cyclePolicy,cycleRequest} from './macmini-program-policy.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const directory=path.join(root,'data/v2/verification/macmini-hourly');
 const hold='/Users/ari/ARI/jini-agent/automation/KSTOCK_AUTO_HOLD';
@@ -13,10 +14,15 @@ async function call(route,body,timeout=20000){
  const r=await fetch(endpoint+route,{method:body?'POST':'GET',headers:body?{'content-type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(timeout)});
  if(!r.ok)throw new Error('BRIDGE_HTTP_'+r.status);return r.json();
 }
+function progress(){try{return programSummary(JSON.parse(fs.readFileSync(path.join(root,'data/v2/verification/macmini-program/progress.json'),'utf8')));}catch{return programSummary(null);}}
+function blockedCount(){
+ try{const dir=path.join(root,'data/v2/verification/jini-jobs');const jobs=fs.readdirSync(dir).filter(n=>/^[a-f0-9-]+\.json$/.test(n)).map(n=>({file:path.join(dir,n),time:fs.statSync(path.join(dir,n)).mtimeMs})).sort((a,b)=>b.time-a.time).slice(0,3);let count=0;for(const j of jobs){if(JSON.parse(fs.readFileSync(j.file,'utf8')).status!=='BLOCKED')break;count++;}return count;}catch{return 0;}
+}
 function snapshot(job){
  const status=job?.status||'NOT_RUN';
  const delayed=status==='RUNNING'&&Date.now()-Date.parse(job.startedAt)>45*60000;
- return {checkedAt:new Date().toISOString(),status:delayed?'DELAYED':status==='EVIDENCE_RECORDED'?'REVIEW_REQUIRED':status,jobId:job?.jobId||null,startedAt:job?.startedAt||null,finishedAt:job?.finishedAt||null,changedFiles:job?.writes||[],tests:(job?.tasks||[]).filter(t=>t.task==='kstock-offline-test').map(t=>({task:t.task,status:t.status,totals:t.totals})),sourceCollection:'NOT_RUN',recommendation:'HOLD',reportPath:job?.reportPath||null,next:status==='RUNNING'?'기존 작업 진행 확인; 중복 실행하지 않음':status==='EVIDENCE_RECORDED'?'코드·테스트 독립 검토 대기':'승인된 미완료 구현·테스트 재개'};
+ const program=progress(),policy=cyclePolicy(job,blockedCount(),program);
+ return {program,cycleMode:policy.mode,checkedAt:new Date().toISOString(),status:delayed?'DELAYED':status==='EVIDENCE_RECORDED'?'REVIEW_REQUIRED':status,jobId:job?.jobId||null,startedAt:job?.startedAt||null,finishedAt:job?.finishedAt||null,changedFiles:job?.writes||[],tests:(job?.tasks||[]).filter(t=>t.task==='kstock-offline-test').map(t=>({task:t.task,status:t.status,totals:t.totals})),sourceCollection:'NOT_RUN',recommendation:'HOLD',reportPath:job?.reportPath||null,next:status==='RUNNING'?'기존 작업 진행 확인; 중복 실행하지 않음':status==='EVIDENCE_RECORDED'?'단일 작업 근거 제출됨; 전체 완료 아님; 다음 미완료 단계 계속':'승인된 미완료 구현·테스트 재개'};
 }
 async function publish(report,suffix){
  const name=report.checkedAt.replace(/[^0-9]/g,'')+'-'+suffix;
@@ -32,10 +38,10 @@ try{
  if(report?.jobId||report?.status==='NOT_RUN'){
   if(fs.existsSync(hold)){report.status='PAUSED';report.next='HOLD 유지 중; 상태 보고만 수행';}
   await publish(report,'hourly');
-  if(!fs.existsSync(hold)&&!['RUNNING','DELAYED','REVIEW_REQUIRED'].includes(report.status)&&!process.argv.includes('--report-only')){
-   const order=fs.readFileSync(path.join(root,'docs/KSTOCK_MACMINI_RECOVERY_ORDER.md'),'utf8');
+  if(!fs.existsSync(hold)&&!['RUNNING','DELAYED'].includes(report.status)&&report.cycleMode!=='INDEPENDENT_FINAL_REVIEW_REQUIRED'&&!process.argv.includes('--report-only')){
+   const order=fs.readFileSync(path.join(root,'docs/KSTOCK_MACMINI_CONTINUOUS_PROMPT.md'),'utf8');
    try{
-    await call('/developer/run',{project:'K-STOCK',request:order+'\n시간별 재개: 현재 코드와 이전 결과를 먼저 확인하고 미완료 부분만 수행하라. 완료된 코드를 불필요하게 다시 작성하지 말고 테스트와 diff를 제출하라.'},30*60000);
+    await call('/developer/run',{project:'K-STOCK',request:cycleRequest(order,report.program,report.cycleMode)},30*60000);
     const state=await call('/developer/status?project=K-STOCK');await publish(snapshot(state.latestJob),'result');
    }catch{await publish({checkedAt:new Date().toISOString(),status:'BLOCKED',reason:'EXECUTION_RESPONSE_UNAVAILABLE',next:'기존 작업 상태를 다음 주기에 재확인; 이번 주기 재요청 없음'},'result');process.exitCode=1;}
   }
