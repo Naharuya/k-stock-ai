@@ -1,3 +1,37 @@
+# 미반영 변경 출시 후보 검증 — 2026-10-20 KST
+
+- 기존 사용자·에이전트 변경 보존. 에이전트 tests/diff 예제는 제품에서 제외하고 로컬 보존. 덮어써졌던 이전 에이전트 보고 원문도 현재 검토와 구분해 복원 보존했다.
+- 최종 전체946/Android계약4 PASS/FAIL0/SKIP0: master-qa-20261020054844380.json. Chrome320/390/1440 × 홈/판단/검증운영/모의기록 라이트·다크24개 및 모의기록 글자확대3개 총27 PASS/가로넘침0/axe위반0/런타임오류0: workspace-finalize/report.json. 코드/문서 secret패턴0 및 diff검사 PASS.
+- 이 시점의 결과는 로컬 후보검증이며 운영 반영·기기 확인 결과는 후속 기록한다. 추천HOLD/실거래OFF/신규공식수집미실행 유지. Mac mini 실행 복구는 별도 미완료 업무이며 업무 지시서와 실패 근거를 제품 검증 성공과 구분한다.
+
+---
+
+# 국내주식 Mac mini 상세 지시 및 결과 회수 — 2026-10-20 KST
+
+- KSTOCK_MACMINI_KR_ORDER.md 작성·전문 전달·실제 실행. 기존 시간별 작업 지시도 국내주식으로 갱신. job f4b26740-955f-448c-ad8a-230edc5138a1 최종 BLOCKED/ok=false, writes=[]로 코드 미구현. 상세 회수 검토는 KSTOCK_MACMINI_KR_REPORT.md.
+- 에이전트 기존 전체946 PASS/0 FAIL/0 SKIP 기록과 별개로 신규 요청 코드를 수정하지 않음. 허용되지 않은 task/commit/push 시도는 실행기에서 차단. Codex 독립 국내 관련 기존30테스트 PASS/0 FAIL/0 SKIP. 실제 원천 검증·SK1014주·DB9건·peer 표본 해결을 뜻하지 않는다. 신규 외부수집 NOT_RUN/추천HOLD/운영변경없음.
+
+---
+
+# 가격·주식수 관측값 입력 검증 — 2026-10-20 KST
+
+- Mac mini 작업은 BLOCKED로 종료했으며 제품 코드 수정 없음. 테스트 실행 기록만으로 구현 완료 처리하지 않음. 기존 에이전트 생성 파일 보존 후 Codex가 구체 작업을 직접 마무리했다.
+- research_readiness에서 문자열·무한대 등이 PENDING으로 잘못 표시되는 문제 수정. 유한 양수 number만 관측값으로 유지, 비정상·0·음수는 INSUFFICIENT_DATA/observedValue null. 정상 관측값도 PENDING이며 추천 HOLD 유지. 출처·기준일과 입력 객체 보존.
+- 신규 경계값/정상값 회귀4개 포함 대상9 PASS, 최종 전체946 PASS/FAIL0/SKIP0. readiness-positive-observations-20261020.json에 실제 명령·파일 해시·종료코드 기록. 운영 대상은 기존 https://kstock.ai.kr / review-b543c85fff215010이며 이번 운영 반영·물리기기 재검증은 NOT RUN.
+
+---
+
+# 홈 연구·추천 구분 및 작업 보고 노출 — 2026-10-20 KST
+
+- 추가 터널 없이 기존 HTTPS 웹·앱 공통 화면 개발. 운영 대상 https://kstock.ai.kr / 마지막 운영 후보 review-b543c85fff215010 확인; 이번 변경은 로컬 검증이며 배포·재시작하지 않았다.
+- 홈 통계명을 연구 대상 기업 / 검증 통과 추천 / 추천 보류 기업으로 구분하고 매수·매도 판단·보류 사유 화면 링크 추가. 종목 수와 추천 승인 수를 혼동하지 않도록 한다.
+- 기존 인증된 작업 보고 API 결과를 홈에도 표시. 홈 복귀·앱 전경 복귀 시 재조회하며 오래된 보고, 인증 실패, 조회 실패도 함께 갱신한다. 표시 대상은 서버에 게시된 보고이며 로컬 JINI 최신 작업·시간별 보고가 자동으로 운영에 동기화된다는 뜻이 아니다. 새 수집·검증 완료·추천 승인으로 해석하지 않는다.
+- 실제 회귀 node scripts/test-offline.js: 942 PASS / FAIL 0 / SKIP 0. 최초 실행은 기존 화면 문구 assertion 1개 실패; 새 통계 세 항목 및 값 검증으로 갱신한 뒤 전체 재실행 통과.
+- Chrome 반응형 검사: 320/390/1440 각 라이트·다크 홈 6개와 기존 모의 기록 글자 확대 3개, 총 9 PASS / 가로 넘침 0 / axe 위반 0 / 런타임 오류 0. data/v2/verification/workspace-home-progress/report.json. 물리 기기 재검증·이번 운영 반영은 NOT RUN.
+- Mac mini 작업 b22a7f12-ef0b-4c22-a3ef-ff757deb513f는 확인 시 RUNNING. 에이전트가 생성한 보고서·tests/diff는 보존했으며 요청한 제품 코드 수정·테스트 완료 근거로 인정하지 않았다. 동시 작업 충돌을 피하려고 해당 백엔드 파일은 수정하지 않았다.
+
+---
+
 # 5번 디자인 최종 운영·실제 기기 확인 — 2026-10-20 KST
 
 - 최종 제품 커밋6a5473c/후보review-b543c85fff215010(169파일, SHA be6702fdea1594d42d3b796ef0bd0792d802749fc379424d245fd0db8d4346b5)로 운영 반영. 원격27검증 및 전환후13검증/공개HTTPS PASS. 환경파일/current/data/기존인증 보존, 이전unit백업, 롤백미실행, 실거래OFF/HOLD 유지. violet-design-final-stage/runtime/activation/public-https-20261020.json.

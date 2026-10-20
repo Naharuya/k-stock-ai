@@ -7,3 +7,27 @@ test('period evidence deduplicates official URLs and rejects unsafe or credentia
 test('observed dates and links are separate from financial periods and do not promote shares',()=>{const r=buildResearchReadiness({valuationReview:{evidence:{shares:{count:10,asOfDate:'2026-07-23',sourceUrl:'https://www.sec.gov/Archives/shares.xml'}}}}).items.find(i=>i.id==='shares');assert.equal(r.status,'PENDING');assert.equal(r.evidence.kind,'OBSERVED_NOT_VALIDATED');assert.equal(r.evidence.asOfDate,'2026-07-23');assert.equal(r.evidence.periodEnd,null);assert.equal(r.evidence.unit,'SHARES');assert.equal(r.evidence.observedValue,10);});
 
 test('documented price source anchors remain available without granting price verification',()=>{const r=buildResearchReadiness({valuationReview:{evidence:{price:{close:100,sourceUrl:'https://www.alphavantage.co/documentation/#daily'}}}}).items.find(i=>i.id==='price');assert.equal(r.status,'PENDING');assert.deepEqual(r.evidence.sources,['https://www.alphavantage.co/documentation/#daily']);});
+
+for(const [id,field] of [['price','close'],['shares','count']]){
+ test(`${id} rejects coerced, nonfinite and nonpositive observations without mutating evidence`,()=>{
+  for(const value of ['100','',Infinity,-Infinity,NaN,0,-1,null,undefined,true,[],[100],{},new Number(100)]){
+   const observation=Object.freeze({[field]:value,asOfDate:'2026-07-23',sourceUrl:'https://www.sec.gov/Archives/fixture.xml'});
+   const input=Object.freeze({valuationReview:Object.freeze({evidence:Object.freeze({[id]:observation})})});
+   const result=buildResearchReadiness(input),item=result.items.find(x=>x.id===id);
+   assert.equal(item.status,'INSUFFICIENT_DATA',`invalid ${id}: ${String(value)}`);
+   assert.equal(item.evidence.observedValue,null);assert.equal(result.status,'HOLD');
+   assert.ok(result.nextRequired.includes(id));assert.ok(!result.confirmed.includes(id));
+   assert.ok(Object.is(observation[field],value));assert.equal(item.evidence.asOfDate,'2026-07-23');
+   assert.deepEqual(item.evidence.sources,['https://www.sec.gov/Archives/fixture.xml']);
+  }
+ });
+ test(`${id} preserves finite positive numbers as unverified observations`,()=>{
+  for(const value of [0.01,1,100,Number.MAX_SAFE_INTEGER]){
+   const result=buildResearchReadiness({valuationReview:{evidence:{[id]:{[field]:value}}}});
+   const item=result.items.find(x=>x.id===id);
+   assert.equal(item.status,'PENDING');assert.equal(item.evidence.observedValue,value);
+   assert.equal(result.status,'HOLD');assert.ok(!result.confirmed.includes(id));
+   assert.deepEqual(JSON.parse(JSON.stringify(item)).evidence.observedValue,value);
+  }
+ });
+}
