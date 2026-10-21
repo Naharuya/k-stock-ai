@@ -14,7 +14,7 @@ export function createMarketDiscovery({workspace,movers,news,activity,now=()=>Da
   const unique=[...merged.values()],sourceTime=unique.length?Math.min(...unique.map(i=>Date.parse(i.receivedAt))):at;
 
   let job=jobs.get(market);
-  if(unique.length&&(!job||!job.running&&at-job.startedAt>=600000)){
+  if(unique.length&&!activityData.refreshing&&(!job||!job.running&&at-job.startedAt>=600000)){
    job={running:true,startedAt:at,checked:0,total:unique.length};jobs.set(market,job);
    const task=serial.then(async()=>{for(const i of unique){await wait(2200);if(now()-sourceTime>=600000)break;try{await workspace.detail(i);}catch{}job.checked++;}}).finally(()=>{job.running=false;});
    serial=task.catch(()=>{});
