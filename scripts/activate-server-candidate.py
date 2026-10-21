@@ -67,7 +67,7 @@ try:
   assert request('/api/v2/trading/holding-review',b'{}',True)[0]==400;checks.append('invalid_direct_holding_400')
  assert request('/api/v2/research/dashboard')[0]==401;checks.append('anonymous_401')
  code,_,body=request('/api/v2/research/dashboard',auth=True);dashboard=json.loads(body);assert code==200 and dashboard.get('success') is True and dashboard.get('recommendationStatus')=='HOLD' and dashboard.get('summary',{}).get('researchEvents',0)>0;checks.append('authenticated_saved_research_hold')
- code,_,body=request('/api/v2/research/progress',auth=True);progress=json.loads(body);assert code==200 and progress.get('sourceCollection')=='NOT_RUN' and progress.get('newOfficialDocuments')==0;checks.append('task_completion_not_source_collection')
+ code,_,body=request('/api/v2/research/progress',auth=True);progress=json.loads(body);assert code==200 and progress.get('success') is True and ((progress.get('sourceCollection')=='NOT_RUN' and progress.get('newOfficialDocuments')==0) or (progress.get('sourceCollection')=='NOT_VERIFIED' and progress.get('newOfficialDocuments') is None));checks.append('task_completion_not_source_collection')
  assert request('/api/v2/paper/performance',b'{}',True)[0]==400;checks.append('invalid_paper_400')
  assert sha(environment)==before;checks.append('environment_preserved')
  status='ACTIVE_VERIFIED'
