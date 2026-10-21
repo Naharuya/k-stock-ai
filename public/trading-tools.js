@@ -34,5 +34,13 @@
   const action=close<=rawStop?'EXIT_CONDITION_MET':close>=rawTarget?'REDUCE_CONDITION_MET':close<sma?'RISK_REVIEW':'HOLD_CONDITION_MET';
   return {action,title:titles[action],close,stop,target,sma,priceDate:data.quote.date,receivedAt:data.receivedAt||data.history?.receivedAt,validUntil:s.validUntil,pnlPct:(close/holding.averageCost-1)*100,stopDistancePct:(stop/close-1)*100,targetDistancePct:(target/close-1)*100};
  }
- return {risk,createAlertTracker,holdingExitSummary};
+ function candidateLevels(strategy,selection,now=Date.now()){
+  const unavailable=reason=>({status:'UNAVAILABLE',reason});
+  if(!Number.isFinite(now)||!strategy||!['BUY_CONDITION_MET','WAIT'].includes(strategy.action)||strategy.policy?.mode!=='RULE_SIMULATION'||strategy.holdingContext!=='NONE')return unavailable('DATA_UNAVAILABLE');
+  const expires=Date.parse(strategy.validUntil),observed=Date.parse(selection?.receivedAt);
+  if(!Number.isFinite(expires)||expires<=now||!Number.isFinite(observed)||observed>now||now-observed>=600000)return unavailable('CONDITION_EXPIRED');
+  const {entry,stop,target}=strategy;if(![entry,stop,target].every(positive)||stop>=entry||target<=entry)return unavailable('LEVELS_INVALID');
+  return {status:'REFERENCE',action:strategy.action,entry,stop,target,lossPct:(entry-stop)/entry*100,targetPct:(target-entry)/entry*100,rewardRisk:(target-entry)/(entry-stop),validUntil:strategy.validUntil};
+ }
+ return {risk,createAlertTracker,holdingExitSummary,candidateLevels};
 });
