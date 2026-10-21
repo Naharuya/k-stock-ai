@@ -1,3 +1,15 @@
+# 거래대금·거래량 증가율 후보 통합 — 2026-10-21 KST
+
+- 최종 source ebb9d24 / active review-90474ba470fc5c28. 국내 KRX 보통주 거래금액순/거래증가율, 미국 NAS·NYS·AMS 거래대금순/15분 거래량 급증 첫 페이지를 기존 읽기 전용 게이트웨이에 추가했다. 계좌/주문/개인화 검색 경로는 추가하지 않았다. 공급자 필드만 사용하고 현재가×거래량으로 거래대금을 추정하지 않는다.
+- 국내 FHPST01710000은 FID_BLNG_CLS_CODE=3/1, 미국 HHDFS76320010은 NDAY=0, HHDFS76270000은 MINX=5로 고정한다. 국내 공급자 증가율과 미국15분 비교를 별도로 표시한다. 공급자 원문 증가율의0기준/상한은 자체적인 통계 검증을 한 값이 아니다.
+- 각 거래소/기준에서 최대10개 공개 필드를 검증해 최신 스냅샷만 저장한다. 10분 만료, 요청 합치기/직렬 처리/최소2.4초 간격/실패60초 대기. 게이트웨이 기존 시간당120회·동시1개 제한을 유지하며 주문/임의 외부 URL/계좌정보는 전달하지 않는다. 저장은 최신 공개 스냅샷 대체 방식이며 개인정보 보유기간 기능 변경은 없다.
+- 급등/급하락/거래대금/거래량증가율 그룹을 번갈아 합쳐 중복을 제거하고 최대20종목을 일봉 평가한다. 중복 선정 사유와 거래대금/증가율을 카드에 표시한다. 초기 활동순위 수집 전 급등락만 먼저 일봉 처리하는 문제를 발견해 활동순위 수집 종료 후 제한된20종목 작업을 시작하도록 수정·재배포했다. 진행 중10초, 일반 홈60초마다 결과를 다시 표시하며 실제 외부 호출은 캐시/예산 제한을 따른다. 화면이 닫힌 동안 상시 시장 전수 수집한다고 보장하지 않는다.
+- 실제 공급자 제한 조회: 국내 거래대금10/거래량증가율10, 미국 NAS 거래대금10, 미국 NAS15분 급증0(HTTP200). 빈 응답을 오류나 임의 종목으로 바꾸지 않았다. NYS/AMS 실제 새 순위 응답 전체 수집은 별도 실증하지 않았다.
+- 최종 국내 운영 확인: 네 가지 선정 이유가 모두 포함된20종목, 일봉20건 작업 종료 후 판단가능17/일봉부족3/모의 매수조건2. 첫 배포 직후0건 판단은 최신 완료 일봉 미확인 및 새 활동후보 미수집 때문이었고, 수집순서 수정 및 일봉 조회 후17건으로 확인했다. 실거래OFF/HOLD, 수익·체결·예측력 검증 완료를 뜻하지 않는다. 뉴스 PARTIAL 상태 유지.
+- 검증: 오프라인1025 PASS, activity/discovery 전용11테스트 포함. 브라우저38 PASS(합성 API,320px 활동지표 가로넘침 검사 포함). 최종 격리42/활성27 PASS. 변경11파일 한정 고신뢰 secret패턴 검사0건. 영수증 data/v2/verification/market-activity/. 기존 사용자 데이터·운영 환경파일 보존.
+- S22는 앱 일반 재실행 후 잠금 상태(showing=true)여서 이번 활동지표 실기기 화면 검증은 미완료다. 브라우저 검증을 실기기 완료로 대체하지 않는다. 임시 UI XML 삭제, 앱/알림 설정·서명키 변경 없음. 공유 웹 반영으로 기존 Android/iOS 앱 재설치는 필요하지 않다.
+- 공식 구현 기준: [국내 거래량순위](https://github.com/koreainvestment/open-trading-api/blob/main/examples_llm/domestic_stock/volume_rank/volume_rank.py), [국내 응답 필드](https://github.com/koreainvestment/open-trading-api/blob/main/examples_llm/domestic_stock/volume_rank/chk_volume_rank.py), [미국 거래대금](https://github.com/koreainvestment/open-trading-api/blob/main/examples_llm/overseas_stock/trade_pbmn/trade_pbmn.py), [미국 거래량 급증](https://github.com/koreainvestment/open-trading-api/blob/main/examples_llm/overseas_stock/volume_surge/volume_surge.py).
+
 # 시장 후보·일봉 조건·뉴스 연결 — 2026-10-21 KST
 
 - source89e2e11, active review-c9c4adbdad34f943. 오늘의 매매조건은 OBSERVED/10분 이내이고 원천 스키마가 검증된 국내/미국 급등·급하락 TOP10씩 최대20종목에서 평가한다. 고정 주요종목은 접힌 참고 목록에만 유지하며, 현재 순위 미확인 시 고정종목을 오늘의 후보로 대체하지 않는다.
