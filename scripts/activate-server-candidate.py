@@ -61,6 +61,7 @@ try:
   assert request('/api/v2/trading/instruments')[0]==401;checks.append('trading_anonymous_401')
   code,_,body=request('/api/v2/trading/instruments?market=KR',auth=True);catalog=json.loads(body);assert code==200 and catalog['universeSecurities']>0;checks.append('trading_catalog_available')
   code,_,body=request('/api/v2/trading/opportunities?market=KR',auth=True);opportunities=json.loads(body);assert code==200 and opportunities.get('recommendationStatus')=='HOLD';checks.append('trading_conditions_not_recommendation')
+  assert opportunities.get('scope')=='CURRENT_MOVERS_DAILY_CLOSE_CONDITIONS' and opportunities.get('orderExecution') is False and opportunities.get('activityStatus') in ['OBSERVED','PARTIAL','LOADING','UNAVAILABLE'] and len(opportunities.get('candidates',[]))<=20;checks.append('market_activity_discovery_contract')
   public_batch=json.dumps({'instruments':[{'market':'KR','symbol':'005930','exchange':'KRX'}]}).encode()
   assert request('/api/v2/trading/holding-summaries',public_batch)[0]==401;checks.append('public_summary_anonymous_401')
   code,headers,body=request('/api/v2/trading/holding-summaries',public_batch,True);summary=json.loads(body);assert code==200 and len(summary.get('items',[]))==1 and summary.get('orderExecution') is False and summary.get('recommendationStatus')=='HOLD' and headers.get('Cache-Control')=='no-store';checks.append('public_summary_authenticated_readonly')

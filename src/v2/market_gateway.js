@@ -1,7 +1,9 @@
+import {activityOperation,parseActivity} from './activity_schema.js';
 import {parseMoverRows} from './mover_schema.js';
 import {createHash} from 'node:crypto';
 export function createMarketGatewayRequest({fetchImpl=globalThis.fetch}={}){
  return async({operation,symbol,params={}})=>{
+  if(['decision-kr-activity','decision-us-turnover','decision-us-growth'].includes(operation)){const q=new URLSearchParams({market:operation==='decision-kr-activity'?'KR':'US',exchange:params.exchange||'KRX',kind:params.kind});const r=await fetchImpl('http://127.0.0.1:18880/activity?'+q,{signal:AbortSignal.timeout(20000),redirect:'error'});if(!r.ok)throw Error('MARKET_GATEWAY_UNAVAILABLE');return r.json();}
   if(['decision-kr-movers','decision-us-movers'].includes(operation)){const q=new URLSearchParams({market:operation==='decision-kr-movers'?'KR':'US',exchange:params.exchange||'KRX',direction:params.direction});let r;try{r=await fetchImpl('http://127.0.0.1:18880/movers?'+q,{signal:AbortSignal.timeout(20000),redirect:'error'});}catch{throw Error('MARKET_GATEWAY_UNAVAILABLE');}if(!r.ok)throw Error('MARKET_GATEWAY_UNAVAILABLE');return r.json();}
   if(!['decision-daily-prices','decision-us-daily-prices'].includes(operation))throw Error('GATEWAY_OPERATION_REJECTED');
   const query=new URLSearchParams({market:operation==='decision-daily-prices'?'KR':'US',symbol,exchange:params.exchange||'KRX',from:params.from,to:params.to});
@@ -16,6 +18,12 @@ export function createMarketGatewayHandler({request,now=()=>Date.now()}={}){
   const reply=(code,value)=>{res.writeHead(code,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(value));};
   if(req.method!=='GET')return reply(405,{error:'READ_ONLY'});
   const u=new URL(req.url,'http://127.0.0.1');if(u.pathname==='/health')return reply(200,{ok:true,mode:'READ_ONLY_MARKET_FIELDS',orderExecution:false});
+  if(u.pathname==='/activity'){
+   const market=u.searchParams.get('market'),exchange=u.searchParams.get('exchange'),kind=u.searchParams.get('kind');
+   if(!['KR','US'].includes(market)||!['TURNOVER','VOLUME_GROWTH'].includes(kind)||(market==='KR'?exchange!=='KRX':!['NAS','NYS','AMS'].includes(exchange)))return reply(400,{error:'SCOPE_INVALID'});
+   if(now()-bucketAt>=3600000){bucketAt=now();calls=0;}if(busy||now()<availableAt||calls>=120)return reply(429,{error:'MARKET_GATEWAY_COOLDOWN'});
+   busy=true;availableAt=now()+2000;calls++;try{const raw=await request({service:'kis',operation:activityOperation(market,kind),symbol:'MARKET',params:{exchange,kind}});reply(200,parseActivity(raw,{market,exchange,kind,receivedAt:new Date(now()).toISOString()}));}catch{availableAt=now()+60000;reply(503,{error:'PROVIDER_UNAVAILABLE'});}finally{busy=false;}return;
+  }
   if(u.pathname==='/movers'){
    const market=u.searchParams.get('market'),exchange=u.searchParams.get('exchange'),direction=u.searchParams.get('direction');
    if(!['KR','US'].includes(market)||!['UP','DOWN'].includes(direction)||(market==='KR'?exchange!=='KRX':!['NAS','NYS','AMS'].includes(exchange)))return reply(400,{error:'SCOPE_INVALID'});

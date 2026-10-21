@@ -1,3 +1,4 @@
+import {createMarketActivity} from './v2/market_activity.js';
 import {createMarketDiscovery} from './v2/market_discovery.js';
 import {createNewsDigest,registerNewsDigest} from './v2/news_digest.js';
 import {createMarketMovers,registerMarketMovers} from './v2/market_movers.js';
@@ -98,7 +99,7 @@ app.get("/health", (_req, res) => {
 app.use("/api", requireExternalAuth);
 const newsDigest=createNewsDigest({directory:path.join(projectDirectory,"data/v2/news-digest")});registerNewsDigest(app,newsDigest);newsDigest.start();
 const marketMovers=createMarketMovers({directory:path.join(projectDirectory,'data/v2/trading-workspace')});registerMarketMovers(app,marketMovers);
-registerTradingWorkspace(app,createMarketDiscovery({movers:marketMovers,news:newsDigest,workspace:createTradingWorkspace({directory:path.join(projectDirectory,"data/v2/trading-workspace"),loadEvents:async()=>{const r=await influenceService.load();return r.capitalEvents||[];}})}));
+registerTradingWorkspace(app,createMarketDiscovery({activity:createMarketActivity({directory:path.join(projectDirectory,'data/v2/trading-workspace')}),movers:marketMovers,news:newsDigest,workspace:createTradingWorkspace({directory:path.join(projectDirectory,"data/v2/trading-workspace"),loadEvents:async()=>{const r=await influenceService.load();return r.capitalEvents||[];}})}));
 registerBackendResearchProgress(app,path.join(projectDirectory,"data/v2/research-progress.json"));
 const refreshOwnership = createOwnershipRefresh();
 const refreshSec = createSec13fRefresh();

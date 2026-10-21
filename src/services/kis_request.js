@@ -6,6 +6,9 @@ const BASE_URLS = {
 };
 
 const OPERATIONS = {
+  'decision-kr-activity':{path:'/uapi/domestic-stock/v1/quotations/volume-rank',transactionId:'FHPST01710000'},
+  'decision-us-turnover':{path:'/uapi/overseas-stock/v1/ranking/trade-pbmn',transactionId:'HHDFS76320010'},
+  'decision-us-growth':{path:'/uapi/overseas-stock/v1/ranking/volume-surge',transactionId:'HHDFS76270000'},
   'decision-kr-movers':{path:'/uapi/domestic-stock/v1/ranking/fluctuation',transactionId:'FHPST01700000'},
   'decision-us-movers':{path:'/uapi/overseas-stock/v1/ranking/updown-rate',transactionId:'HHDFS76290000'},
   'decision-daily-prices': {path:'/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice',transactionId:'FHKST03010100'},
@@ -95,13 +98,19 @@ export function createKisRequest({
     if (!appKey || !appSecret) {
       throw new Error('KIS_APP_KEY and KIS_APP_SECRET are required.');
     }
-    if (typeof symbol !== 'string' || (['decision-kr-movers','decision-us-movers'].includes(operation) ? symbol!=='MARKET' : operation === 'decision-daily-prices' ? !/^[0-9][A-Z0-9]{5}$/.test(symbol) : operation === 'decision-us-daily-prices' ? !/^[A-Z][A-Z0-9.]{0,9}$/.test(symbol) : operation === 'nonapple-daily-prices' ? symbol!=='MSFT' : operation === 'us-daily-prices' ? symbol!=='AAPL' : operation === 'index-daily' ? !['0001','1001'].includes(symbol) : !/^\d{6}$/.test(symbol))) {
+    if (typeof symbol !== 'string' || (['decision-kr-movers','decision-us-movers','decision-kr-activity','decision-us-turnover','decision-us-growth'].includes(operation) ? symbol!=='MARKET' : operation === 'decision-daily-prices' ? !/^[0-9][A-Z0-9]{5}$/.test(symbol) : operation === 'decision-us-daily-prices' ? !/^[A-Z][A-Z0-9.]{0,9}$/.test(symbol) : operation === 'nonapple-daily-prices' ? symbol!=='MSFT' : operation === 'us-daily-prices' ? symbol!=='AAPL' : operation === 'index-daily' ? !['0001','1001'].includes(symbol) : !/^\d{6}$/.test(symbol))) {
       throw new Error('A six-digit KIS stock code is required');
     }
 
     const definition = OPERATIONS[operation];
     const url = new URL(definition.path, baseUrl);
-    if(['decision-kr-movers','decision-us-movers'].includes(operation)){
+    if(['decision-kr-activity','decision-us-turnover','decision-us-growth'].includes(operation)){
+      if(!['TURNOVER','VOLUME_GROWTH'].includes(params.kind))throw createRequestError('Activity kind invalid','ACTIVITY_SCOPE_INVALID');
+      let query;
+      if(operation==='decision-kr-activity')query={FID_COND_MRKT_DIV_CODE:'J',FID_COND_SCR_DIV_CODE:'20171',FID_INPUT_ISCD:'0000',FID_DIV_CLS_CODE:'1',FID_BLNG_CLS_CODE:params.kind==='TURNOVER'?'3':'1',FID_TRGT_CLS_CODE:'111111111',FID_TRGT_EXLS_CLS_CODE:'000000',FID_INPUT_PRICE_1:'',FID_INPUT_PRICE_2:'',FID_VOL_CNT:'',FID_INPUT_DATE_1:''};
+      else {if(!['NAS','NYS','AMS'].includes(params.exchange)||params.kind!==(operation==='decision-us-turnover'?'TURNOVER':'VOLUME_GROWTH'))throw createRequestError('Activity exchange invalid','ACTIVITY_SCOPE_INVALID');query={EXCD:params.exchange,VOL_RANG:'0',AUTH:'',KEYB:'',...(operation==='decision-us-turnover'?{NDAY:'0',PRC1:'',PRC2:''}:{MINX:'5'})};}
+      for(const [k,v]of Object.entries(query))url.searchParams.set(k,v);
+    }else if(['decision-kr-movers','decision-us-movers'].includes(operation)){
       if(!['UP','DOWN'].includes(params.direction))throw createRequestError('Mover direction invalid','MOVERS_SCOPE_INVALID');
       if(operation==='decision-us-movers'){
         if(!['NAS','NYS','AMS'].includes(params.exchange))throw createRequestError('Mover exchange invalid','MOVERS_SCOPE_INVALID');
